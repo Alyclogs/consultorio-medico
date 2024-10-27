@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "610500716881",
+    "project_id": "consultorio-53b74",
+    "storage_bucket": "consultorio-53b74.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:610500716881:android:c8bd00e6bf86123c040b70",
+        "android_client_info": {
+          "package_name": "com.developer.consultorio_medico"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPwR_VUjIWzNafn0FuuTpyzHkMCikg_ZU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
