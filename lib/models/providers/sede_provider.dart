@@ -18,6 +18,11 @@ class SedeProvider{
     return Sede.fromJson(doc.data() as Map<String, dynamic>, doc.id);
   }
 
+  Future<Sede?> getRegistroFromNombre(String nombre) async {
+    final docs = await bd.where('nombre', isEqualTo: nombre).get();
+    return docs.docs.isNotEmpty ? docs.docs.map((doc) => Sede.fromJson(doc.data() as Map<String, dynamic>, doc.id)).first : null;
+  }
+
   Future<void> addRegistro(Sede sede, String id) async {
     await bd.doc(id).set(sede.toJson());
   }

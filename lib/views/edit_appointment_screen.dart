@@ -4,29 +4,40 @@ import 'package:consultorio_medico/models/cita.dart';
 import 'package:consultorio_medico/models/providers/cita_provider.dart';
 import 'package:consultorio_medico/models/providers/medico_provider.dart';
 import 'package:consultorio_medico/models/providers/usuario_provider.dart';
+import 'package:consultorio_medico/views/components/bottom_navbar.dart';
 import 'package:consultorio_medico/views/components/seleccion_modal.dart';
 import 'package:consultorio_medico/views/components/loading_screen.dart';
-import 'package:consultorio_medico/views/pago_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/medico.dart';
 import '../models/providers/sede_provider.dart';
 import '../models/sede.dart';
 
-class NewAppointmentScreen extends StatefulWidget {
-  const NewAppointmentScreen({super.key});
+class EditAppointmentScreen extends StatefulWidget {
+  final Cita citaSeleccionada;
+  const EditAppointmentScreen({super.key, required this.citaSeleccionada});
 
   @override
-  NewAppointmentScreenState createState() => NewAppointmentScreenState();
+  EditAppointmentScreenState createState() => EditAppointmentScreenState();
 }
 
-class NewAppointmentScreenState extends State<NewAppointmentScreen> {
+class EditAppointmentScreenState extends State<EditAppointmentScreen> {
   int _currentStep = 0;
   bool isLoading = true;
 
   final _formKeyStep1 = GlobalKey<FormState>();
   final _formKeyStep2 = GlobalKey<FormState>();
   final _formKeyStep3 = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _fillData();
+  }
+
+  void _fillData() async {
+    await _fillCitaData();
+  }
 
   final currentUser = UsuarioProvider.instance.usuarioActual;
   final _dniPaciente = TextEditingController();
@@ -36,7 +47,7 @@ class NewAppointmentScreenState extends State<NewAppointmentScreen> {
   bool _autofill = false;
   final _sede = TextEditingController();
   final _medico = TextEditingController();
-  String _motivo = "";
+  final _motivo = TextEditingController();
   final _fechaSeleccionada = TextEditingController();
   final _horaSeleccionada = TextEditingController();
   bool _esMasculino = false;
@@ -52,6 +63,26 @@ class NewAppointmentScreenState extends State<NewAppointmentScreen> {
       if (_currentStep > 0) {
         _currentStep -= 1;
       }
+    });
+  }
+
+  Future<void> _fillCitaData() async {
+    final user = await UsuarioProvider.instance.getRegistro(widget.citaSeleccionada.dniPaciente);
+    final medico = await MedicoProvider.instance.getRegistro(widget.citaSeleccionada.idMedico);
+    final sede = await SedeProvider.instance.getRegistro(widget.citaSeleccionada.idSede);
+    if (user == null || medico == null || sede == null) {
+      return;
+    }
+    setState(() {
+      _nombre.text = user.nombre;
+      _dniPaciente.text = user.id;
+      _edad.text = '${user.edad}';
+      _esMasculino = user.genero == "Masculino" ? true : false;
+      _sede.text = sede.nombre;
+      _medico.text = medico.nombre;
+      _motivo.text = widget.citaSeleccionada.motivo;
+      _fechaSeleccionada.text = DateFormat('dd-MM-yyyy').format(widget.citaSeleccionada.fecha);
+      _horaSeleccionada.text = DateFormat('HH:mm').format(widget.citaSeleccionada.fecha);
     });
   }
 
@@ -126,35 +157,44 @@ class NewAppointmentScreenState extends State<NewAppointmentScreen> {
       );
       return;
     }
-    _agendarCita();
+    _editarCita();
   }
 
-  Future<void> _agendarCita() async {
-    CitaProvider bd = CitaProvider.instance;
-    final DateTime fechaHora = DateFormat('dd-MM-yyyy HH:mm')
-        .parse('${_fechaSeleccionada.text} ${_horaSeleccionada.text}');
-    final appointment = Cita(
-        id: await bd.generarNuevoId(fechaHora),
-        fecha: fechaHora,
-        nomPaciente: _nombre.text,
-        dniPaciente: _dniPaciente.text,
-        idMedico: _medico.text,
-        idSede: _sede.text,
-        edadPaciente: int.parse(_edad.text),
-        motivo: _motivo,
-        costo: 50.0,
-        estado: "PENDIENTE");
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => PaymentWebView(appointment: appointment)));
+  Future<void> _editarCita() async {
+    final user = await UsuarioProvider.instance.getRegistro(_dniPaciente.text);
+    final medico = await MedicoProvider.instance.getRegistroFromNombre(_medico.text);
+    final sede = await SedeProvider.instance.getRegistroFromNombre(_sede.text);
+
+    if (user == null || medico == null || sede == null) {
+      return;
+    } else {
+      CitaProvider bd = CitaProvider.instance;
+      final DateTime fechaHora = DateFormat('dd-MM-yyyy HH:mm')
+          .parse('${_fechaSeleccionada.text} ${_horaSeleccionada.text}');
+      final appointment = Cita(
+          id: widget.citaSeleccionada.id,
+          fecha: fechaHora,
+          nomPaciente: _nombre.text,
+          dniPaciente: _dniPaciente.text,
+          idMedico: medico.id,
+          idSede: sede.id,
+          edadPaciente: int.parse(_edad.text),
+          motivo: _motivo.text,
+          costo: 50.0,
+          estado: "PENDIENTE",);
+      await bd.updateRegistro(appointment);
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => BottomNavBar(initialIndex: 1,)));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Nueva Cita'),
+        title: Text('Editar Cita'),
       ),
       body: SingleChildScrollView(
         child: Stepper(
@@ -190,7 +230,7 @@ class NewAppointmentScreenState extends State<NewAppointmentScreen> {
                     ),
                     onPressed: details.onStepContinue,
                     child: Text(
-                      _currentStep < 2 ? "Siguiente" : "Agendar y pagar",
+                      _currentStep < 2 ? "Siguiente" : "Actualizar cita",
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -357,7 +397,8 @@ class NewAppointmentScreenState extends State<NewAppointmentScreen> {
                           height: 10,
                         ),
                         _buildInputField(context, "Motivo de la consulta",
-                            onSaved: (value) => _motivo = value!,
+                            controller: _motivo,
+                            onSaved: (value) => _motivo.text = value!,
                             multiline: true),
                         SizedBox(
                           height: 10,

@@ -3,6 +3,8 @@ import 'package:consultorio_medico/views/components/bottom_navbar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'components/info_row.dart';
+
 class SuccessPage extends StatelessWidget {
   final Pago pago;
   const SuccessPage({super.key, required this.pago});
@@ -48,11 +50,11 @@ class SuccessPage extends StatelessWidget {
                         SizedBox(
                           height: 10,
                         ),
-                        _buildInfoRow("PagoId:", pago.id),
-                        _buildInfoRow("Fecha:",
+                        buildInfoRow("PagoId:", pago.id),
+                        buildInfoRow("Fecha:",
                             DateFormat('dd/MM/yyyy HH:mm').format(pago.fecha)),
-                        _buildInfoRow("Monto recibido:", '${pago.monto}'),
-                        _buildInfoRow("Motivo:", pago.motivo)
+                        buildInfoRow("Monto recibido:", '${pago.monto}'),
+                        buildInfoRow("Motivo:", pago.motivo)
                       ],
                     ),
                   ),
@@ -77,28 +79,6 @@ class SuccessPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Color(0xff0c4454),
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(fontSize: 14),
-          ),
-        ),
-      ],
     );
   }
 }

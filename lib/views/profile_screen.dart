@@ -2,6 +2,8 @@ import 'package:consultorio_medico/models/providers/usuario_provider.dart';
 import 'package:consultorio_medico/models/usuario.dart';
 import 'package:flutter/material.dart';
 
+import 'components/info_row.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -71,15 +73,15 @@ class ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       SizedBox(height: 56),
-                      _buildInfoRow("Nombre", currentUser.nombre),
+                      buildInfoRow("Nombre", currentUser.nombre),
                       SizedBox(height: 20),
-                      _buildInfoRow("DNI", currentUser.id),
+                      buildInfoRow("DNI", currentUser.id),
                       SizedBox(height: 20),
-                      _buildInfoRow("Teléfono", currentUser.telefono),
+                      buildInfoRow("Teléfono", currentUser.telefono),
                       SizedBox(height: 20),
-                      _buildInfoRow("Edad", '${currentUser.edad}'),
+                      buildInfoRow("Edad", '${currentUser.edad}'),
                       SizedBox(height: 20),
-                      _buildInfoRow("Género", currentUser.genero),
+                      buildInfoRow("Género", currentUser.genero),
                       SizedBox(height: 20),
                     ],
                   ),
@@ -89,28 +91,6 @@ class ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Color(0xff0c4454),
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(fontSize: 14),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -11,7 +11,6 @@ class Cita {
   String motivo;
   double costo;
   String estado;
-  bool notificar;
 
   Cita({
     required this.id,
@@ -24,7 +23,6 @@ class Cita {
     required this.motivo,
     required this.costo,
     required this.estado,
-    required this.notificar,
   });
 
   factory Cita.fromJson(Map<String, dynamic> json, String id) {
@@ -39,7 +37,6 @@ class Cita {
       motivo: json['motivo'] as String,
       costo: (json['costo'] as num).toDouble(),
       estado: json['estado'] as String,
-      notificar: json['notificar'] as bool,
     );
   }
 
@@ -54,7 +51,6 @@ class Cita {
       'motivo': motivo,
       'costo': costo,
       'estado': estado,
-      'notificar': notificar,
     };
   }
 }

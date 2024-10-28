@@ -45,19 +45,21 @@ class SeleccionModal<T extends Seleccionable> {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                                 side: BorderSide(color: Color(0xFFBDBDBD))),
-                            leading: item.foto.isNotEmpty
-                                ? Image.network(
-                                    item.foto,
-                                    width: 40,
-                                    height: 40,
-                                  )
-                                : Image.asset(
-                                    item is Sede
-                                        ? 'assets/images/hospital.png'
-                                        : 'assets/images/doctor.png',
-                                    width: 40,
-                                    height: 40,
-                                  ),
+                            leading: ClipOval(
+                              child: item.foto.isNotEmpty
+                                  ? Image.network(
+                                      item.foto,
+                                      width: 40,
+                                      height: 40,
+                                    )
+                                  : Image.asset(
+                                      item is Sede
+                                          ? 'assets/images/hospital.png'
+                                          : 'assets/images/doctor.png',
+                                      width: 40,
+                                      height: 40,
+                                    ),
+                            ),
                             title: Text(item.nombre),
                             subtitle: item is Sede
                                 ? Text(item.direccion)

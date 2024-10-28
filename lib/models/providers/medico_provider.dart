@@ -17,6 +17,11 @@ class MedicoProvider{
     return Medico.fromJson(doc.data() as Map<String, dynamic>, doc.id);
   }
 
+  Future<Medico?> getRegistroFromNombre(String nombre) async {
+    final docs = await bd.where('nombre', isEqualTo: nombre).get();
+    return docs.docs.isNotEmpty ? docs.docs.map((doc) => Medico.fromJson(doc.data() as Map<String, dynamic>, doc.id)).first : null;
+  }
+
   Future<void> addRegistro(Medico usuario) async {
     String id = await obtenerNuevoId();
     await bd.doc(id).set(usuario.toJson());

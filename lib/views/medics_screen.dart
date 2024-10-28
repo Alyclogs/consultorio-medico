@@ -1,4 +1,5 @@
 import 'package:consultorio_medico/models/providers/medico_provider.dart';
+import 'package:consultorio_medico/views/medic_details_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../models/medico.dart';
@@ -77,6 +78,7 @@ class _MedicsScreenState extends State<MedicsScreen>
 
   Widget _buildMedico(Medico medico) {
     return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => MedicDetailsScreen(selectedMedic: medico))),
       child: Card(
         margin: EdgeInsets.symmetric(vertical: 10.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),

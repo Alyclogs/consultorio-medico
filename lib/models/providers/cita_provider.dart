@@ -1,9 +1,7 @@
 import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:consultorio_medico/models/cita.dart';
 import 'package:consultorio_medico/models/pago.dart';
-import 'package:intl/intl.dart';
 
 class CitaProvider {
   static final CitaProvider instance = CitaProvider._init();
@@ -12,10 +10,10 @@ class CitaProvider {
   CitaProvider._init();
 
   Future<List<Cita>> getRegistros(String id, [String estado = ""]) async {
-    QuerySnapshot querySnapshot = await bd.get();
+    QuerySnapshot querySnapshot = await bd.where('dniPaciente', isEqualTo: id).get();
+    print(querySnapshot.docs.toList());
     final docs = querySnapshot.docs
-        .map((doc) => Cita.fromJson(doc.data() as Map<String, dynamic>, doc.id))
-        .where((cita) => cita.id.startsWith('Cita_${id}'));
+        .map((doc) => Cita.fromJson(doc.data() as Map<String, dynamic>, doc.id));
     if (estado.isEmpty) {
       return docs.toList();
     } else {
@@ -44,8 +42,8 @@ class CitaProvider {
     await FirebaseFirestore.instance.collection('pagos').add(pagoData);
   }
 
-  Future<void> updateRegistro(Cita cita, String id) async {
-    await bd.doc(id).update(cita.toJson());
+  Future<void> updateRegistro(Cita cita) async {
+    await bd.doc(cita.id).update(cita.toJson());
   }
 
   Future<void> deleteRegistro(String id) async {

@@ -1,4 +1,5 @@
 import 'package:consultorio_medico/models/providers/sede_provider.dart';
+import 'package:consultorio_medico/views/sede_details_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../models/sede.dart';
@@ -71,6 +72,7 @@ class _SedesScreenState extends State<SedesScreen>
 
   Widget _buildSede(Sede sede) {
     return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SedeDetailsScreen(selectedSede: sede))),
       child: Card(
         margin: EdgeInsets.symmetric(vertical: 10.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),

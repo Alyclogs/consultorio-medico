@@ -5,10 +5,12 @@ import 'package:consultorio_medico/models/providers/medico_provider.dart';
 import 'package:consultorio_medico/models/providers/sede_provider.dart';
 import 'package:consultorio_medico/models/providers/usuario_provider.dart';
 import 'package:consultorio_medico/models/usuario.dart';
+import 'package:consultorio_medico/views/edit_appointment_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/cita.dart';
 
 import '../models/sede.dart';
+import 'appointment_details_screen.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   final int initialIndex;
@@ -31,13 +33,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   @override
   void initState() {
     super.initState();
-    _loadMedics();
+    _loadCitas();
   }
 
-  Future<void> _loadMedics() async {
+  Future<void> _loadCitas() async {
     try {
       citasPendientes = await bd.getRegistros(usuarioActual.id, "PENDIENTE");
-      citasPendientes = await bd.getRegistros(usuarioActual.id, "FINALIZADO");
+      citasFinalizadas = await bd.getRegistros(usuarioActual.id, "FINALIZADO");
       setState(() {
         isLoading = false;
       });
@@ -46,76 +48,31 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     }
   }
 
-  /*
-  List<Cita> citasPendientes = [
-    Cita(
-        id: "Ci-10001",
-        fecha: DateTime.now(),
-        nomPaciente: "Ana",
-        dniPaciente: "46564572",
-        edadPaciente: 42,
-        idMedico: "Med-1001",
-        idSede: "MedicArt-Ate-01",
-        motivo: "Consulta General",
-        costo: 50.0,
-        estado: "PENDIENTE",
-        notificar: true),
-    Cita(
-        id: "Ci-10032",
-        fecha: DateTime.now(),
-        nomPaciente: "Carlos",
-        dniPaciente: "06948322",
-        edadPaciente: 56,
-        idMedico: "Med-1001",
-        idSede: "MedicArt-Ate-01",
-        motivo: "Cita de Control",
-        costo: 0.0,
-        estado: "PENDIENTE",
-        notificar: true),
-  ];
-
-  List<Cita> citasFinalizadas = [
-    Cita(
-        id: "Ci-10011",
-        fecha: DateTime.now(),
-        nomPaciente: "Carlos",
-        dniPaciente: "06948322",
-        edadPaciente: 56,
-        idMedico: "Med-1001",
-        idSede: "MedicArt-Ate-01",
-        motivo: "Consulta General",
-        costo: 50.0,
-        estado: "FINALIZADO",
-        notificar: false),
-    Cita(
-        id: "Ci-10023",
-        fecha: DateTime.now(),
-        nomPaciente: "Ana",
-        dniPaciente: "46564572",
-        idMedico: "Med-1001",
-        idSede: "MedicArt-Ate-01",
-        edadPaciente: 42,
-        motivo: "Analisis Medico",
-        costo: 50.0,
-        estado: "FINALIZADO",
-        notificar: false)
-  ];
-
-  final Resultado resultadoCita = Resultado("ResCi-10002", "Ci-10002",
-      "Faringitis", "No bebidas heladas, Si tomar agua tibia", [
-    Medicamento(
-        medicamento: "Amoxicilina con Acido Clavulanico",
-        dosis: "1und. Mañana, 1und Noche (Antes de las comidas)",
-        duracion: "7 días")
-  ]);
-
-  final Analisis analisis = Analisis("AnCi-10023", "Ci-10023", [
-    ResultadoAnalisis("Hemoglobina", 14),
-    ResultadoAnalisis("Glucosa", 92),
-    ResultadoAnalisis("Colesterol total", 159),
-    ResultadoAnalisis("Triglicéridos", 67)
-  ]);
-   */
+  void _showDeleteDialog(Cita cita) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Precaución'),
+          content: Text('¿Está seguro de que desea eliminar la cita?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await bd.deleteRegistro(cita.id);
+              },
+              child: Text('Cancelar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,8 +94,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
             Expanded(
               child: TabBarView(
                 children: [
-                  isLoading ? Center(child: CircularProgressIndicator()) : _listaCitas(context, citasPendientes),
-                  isLoading ? Center(child: CircularProgressIndicator()) : _listaCitas(context, citasFinalizadas),
+                  isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : _listaCitas(context, citasPendientes),
+                  isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : _listaCitas(context, citasFinalizadas),
                 ],
               ),
             ),
@@ -154,18 +115,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       child: Column(
         children: [
           if (citas.isNotEmpty)
-          ...citas.map((cita) => FutureBuilder<Widget>(
-            future: _buildCita(cita),
-            builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              } else {
-                return snapshot.data ?? SizedBox();
-              }
-            },
-          ))
+            ...citas.map((cita) => FutureBuilder<Widget>(
+                  future: _buildCita(cita),
+                  builder:
+                      (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    } else {
+                      return snapshot.data ?? SizedBox();
+                    }
+                  },
+                ))
           else
             Center(child: Text("No hay citas para mostrar")),
           SizedBox(height: 62),
@@ -174,12 +136,20 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     );
   }
 
-
   Future<Widget> _buildCita(Cita cita) async {
-    final Medico? medico = await MedicoProvider.instance.getRegistro(cita.idMedico);
+    final Medico? medico =
+        await MedicoProvider.instance.getRegistro(cita.idMedico);
     final Sede? sede = await SedeProvider.instance.getRegistro(cita.idSede);
 
     return GestureDetector(
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => AppointmentDetailsScreen(
+                    cita: cita,
+                    nombreMedico: medico?.nombre ?? "Médico",
+                    nombreSede: sede?.nombre ?? "Sede",
+                  ))),
       child: Card(
         margin: EdgeInsets.symmetric(vertical: 10.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -206,11 +176,18 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(medico != null ? medico.nombre : "Médico No Identificado",
+                        Text(
+                            medico != null
+                                ? medico.nombre
+                                : "Médico",
                             style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xff0c4454))),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Color(0xff0c4454))),
                         SizedBox(height: 10),
-                        Text(sede != null ? sede.nombre : "Sede No Identificada", style: TextStyle(fontSize: 11)),
+                        Text(
+                            sede != null ? sede.nombre : "Sede",
+                            style: TextStyle(fontSize: 11)),
                         SizedBox(height: 20),
                         Text(cita.motivo, style: TextStyle(fontSize: 13)),
                       ],
@@ -224,23 +201,31 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25)),
                       onSelected: (value) {
-                        // Manejo de selección
+                        if (value == 'Modificar_${cita.id}') {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => EditAppointmentScreen(
+                                      citaSeleccionada: cita)));
+                        } else if (value == 'Eliminar_${cita.id}') {
+                          _showDeleteDialog(cita);
+                        }
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
                         PopupMenuItem(
-                          value: 'ToggleNotification_${cita.id}',
-                          child: Text(cita.notificar
-                              ? "Desactivar alarma"
-                              : "Activar alarma", style: TextStyle(color: Colors.grey[700]),),
-                        ),
-                        PopupMenuItem(
                           value: 'Modificar_${cita.id}',
-                          child: Text('Modificar cita', style: TextStyle(color: Colors.grey[700]),),
+                          child: Text(
+                            'Modificar cita',
+                            style: TextStyle(color: Colors.grey[700]),
+                          ),
                         ),
                         PopupMenuItem(
                           value: 'Eliminar_${cita.id}',
-                          child: Text('Eliminar cita', style: TextStyle(color: Colors.grey[700]),),
+                          child: Text(
+                            'Eliminar cita',
+                            style: TextStyle(color: Colors.grey[700]),
+                          ),
                         ),
                       ],
                     )
@@ -254,7 +239,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                        cita.notificar
+                        UsuarioProvider.instance.usuarioActual.sendNotifications
                             ? "Alerta activada"
                             : "Alerta desactivada",
                         style: TextStyle(fontSize: 11)),
@@ -288,7 +273,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                           color: Color(0xFF5494a3),
                           size: 11,
                         ),
-                        SizedBox(width: 8,),
+                        SizedBox(
+                          width: 8,
+                        ),
                         Text(
                           "Ver resultado",
                           style:

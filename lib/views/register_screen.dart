@@ -51,7 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (existe == null) {
           if (await AuthController.validarDNI(dni, nombre) != 200) {
             Navigator.pop(context);
-            _showErrorDialog("El DNI ingresado no es válido");
+            _showErrorDialog("El DNI ingresado no es válido o no coincide con el nombre ingresado");
             return;
           } else {
             final newUser = Usuario(
