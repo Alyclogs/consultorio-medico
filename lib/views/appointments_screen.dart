@@ -5,7 +5,9 @@ import 'package:consultorio_medico/models/providers/medico_provider.dart';
 import 'package:consultorio_medico/models/providers/sede_provider.dart';
 import 'package:consultorio_medico/models/providers/usuario_provider.dart';
 import 'package:consultorio_medico/models/usuario.dart';
+import 'package:consultorio_medico/views/components/loading_screen.dart';
 import 'package:consultorio_medico/views/edit_appointment_screen.dart';
+import 'package:consultorio_medico/views/new_appointment_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/cita.dart';
 
@@ -64,9 +66,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
             ),
             TextButton(
               onPressed: () async {
+                loadingScreen(context);
                 await bd.deleteRegistro(cita.id);
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
               },
-              child: Text('Cancelar'),
+              child: Text('Aceptar'),
             ),
           ],
         );
@@ -104,6 +109,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
               ),
             ),
           ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => NewAppointmentScreen()));
+          },
+          backgroundColor: Theme.of(context).primaryColor,
+          shape: CircleBorder(),
+          child: const Icon(Icons.add, color: Colors.white,),
         ),
       ),
     );

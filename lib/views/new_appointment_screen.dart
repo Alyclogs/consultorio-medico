@@ -130,24 +130,31 @@ class NewAppointmentScreenState extends State<NewAppointmentScreen> {
   }
 
   Future<void> _agendarCita() async {
-    CitaProvider bd = CitaProvider.instance;
-    final DateTime fechaHora = DateFormat('dd-MM-yyyy HH:mm')
-        .parse('${_fechaSeleccionada.text} ${_horaSeleccionada.text}');
-    final appointment = Cita(
-        id: await bd.generarNuevoId(fechaHora),
-        fecha: fechaHora,
-        nomPaciente: _nombre.text,
-        dniPaciente: _dniPaciente.text,
-        idMedico: _medico.text,
-        idSede: _sede.text,
-        edadPaciente: int.parse(_edad.text),
-        motivo: _motivo,
-        costo: 50.0,
-        estado: "PENDIENTE");
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => PaymentWebView(appointment: appointment)));
+    final medico = await MedicoProvider.instance.getRegistroFromNombre(_medico.text);
+    final sede = await SedeProvider.instance.getRegistroFromNombre(_sede.text);
+
+    if (medico == null || sede == null) {
+      return;
+    } else {
+      CitaProvider bd = CitaProvider.instance;
+      final DateTime fechaHora = DateFormat('dd-MM-yyyy HH:mm')
+          .parse('${_fechaSeleccionada.text} ${_horaSeleccionada.text}');
+      final appointment = Cita(
+          id: await bd.generarNuevoId(fechaHora),
+          fecha: fechaHora,
+          nomPaciente: _nombre.text,
+          dniPaciente: _dniPaciente.text,
+          idMedico: medico.id,
+          idSede: sede.id,
+          edadPaciente: int.parse(_edad.text),
+          motivo: _motivo,
+          costo: 50.0,
+          estado: "PENDIENTE");
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => PaymentWebView(appointment: appointment)));
+    }
   }
 
   @override

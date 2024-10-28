@@ -33,12 +33,12 @@ class PaymentWebViewState extends State<PaymentWebView> {
     allowFileAccessFromFileURLs: true,
     useOnLoadResource: true,
     supportMultipleWindows: true,
+      useShouldOverrideUrlLoading: true
   );
 
   PullToRefreshController? pullToRefreshController;
   double progress = 0;
   String? _finalUrl;
-  bool isLoading = true;
 
   @override
   void initState() {
@@ -80,10 +80,7 @@ class PaymentWebViewState extends State<PaymentWebView> {
       'language': "es",
       'orderId': widget.appointment.id
     };
-
     var jsonData = json.encode(body);
-    print(jsonDecode(jsonData));
-
     var response = await http.post(
       url,
       headers: <String, String>{
@@ -91,7 +88,6 @@ class PaymentWebViewState extends State<PaymentWebView> {
       },
       body: jsonData,
     );
-
     if (response.statusCode != 200) return null;
     var data = jsonDecode(response.body);
     String responseString = data['redirectionUrl'].toString();
@@ -100,6 +96,7 @@ class PaymentWebViewState extends State<PaymentWebView> {
 
   @override
   Widget build(BuildContext context) {
+    late Uri pdfUrl;
     if (_finalUrl == null) {
       return Center(child: CircularProgressIndicator());
     }
@@ -122,14 +119,12 @@ class PaymentWebViewState extends State<PaymentWebView> {
                     webViewController = controller;
                   },
                   onLoadStart: (controller, url) {
-                    setState(() {
-                      isLoading = true;
-                    });
+                    print('Page started loading: ${url.toString()}');
                   },
                   shouldOverrideUrlLoading:
                       (controller, navigationAction) async {
                     var uri = navigationAction.request.url!;
-                    if (uri.scheme.contains('success')) {
+                    if (uri.toString().contains('success')) {
                       await CitaProvider.instance
                           .addRegistro(widget.appointment);
                       final pago = await CitaProvider.instance
@@ -137,16 +132,20 @@ class PaymentWebViewState extends State<PaymentWebView> {
                       Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => SuccessPage(pago: pago)));
+                              builder: (context) => SuccessPage(pago: pago, pdfUrl: pdfUrl,)));
+                      return NavigationActionPolicy.CANCEL;
+                    }
+                    if (uri.toString().toLowerCase().endsWith('pdf')) {
+                      await launchUrl(uri);
+                      setState(() {
+                        pdfUrl = uri;
+                      });
                       return NavigationActionPolicy.CANCEL;
                     }
                     return NavigationActionPolicy.ALLOW;
                   },
                   onLoadStop: (controller, url) async {
                     pullToRefreshController?.endRefreshing();
-                    setState(() {
-                      isLoading = false;
-                    });
                   },
                   onReceivedError: (controller, request, error) {
                     pullToRefreshController?.endRefreshing();

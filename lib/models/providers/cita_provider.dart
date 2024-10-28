@@ -38,7 +38,7 @@ class CitaProvider {
       "monto": cita.costo,
       "motivo": "Pago cita MedicArt"
     };
-    await bd.add(cita.toJson());
+    await bd.doc(cita.id).set(cita.toJson());
     await FirebaseFirestore.instance.collection('pagos').add(pagoData);
   }
 

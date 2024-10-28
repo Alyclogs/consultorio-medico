@@ -161,11 +161,10 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
   }
 
   Future<void> _editarCita() async {
-    final user = await UsuarioProvider.instance.getRegistro(_dniPaciente.text);
     final medico = await MedicoProvider.instance.getRegistroFromNombre(_medico.text);
     final sede = await SedeProvider.instance.getRegistroFromNombre(_sede.text);
 
-    if (user == null || medico == null || sede == null) {
+    if (medico == null || sede == null) {
       return;
     } else {
       CitaProvider bd = CitaProvider.instance;

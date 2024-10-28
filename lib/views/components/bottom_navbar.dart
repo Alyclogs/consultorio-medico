@@ -69,21 +69,23 @@ class _BottomNavBarState extends State<BottomNavBar>
       body: Column(
         children: [
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                HomeScreen(),
-                AppointmentsScreen(),
-                MedicsScreen(),
-                SedesScreen(),
-                ProfileScreen(),
-              ],
+            child: SafeArea(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  HomeScreen(),
+                  AppointmentsScreen(),
+                  MedicsScreen(),
+                  SedesScreen(),
+                  ProfileScreen(),
+                ],
+              ),
             ),
           ),
         ],
       ),
       bottomNavigationBar: Container(
-        margin: EdgeInsets.symmetric(horizontal:36, vertical: 24),
+        margin: EdgeInsets.symmetric(horizontal: 36, vertical: 24),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(35),
