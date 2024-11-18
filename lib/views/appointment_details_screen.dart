@@ -4,15 +4,20 @@ import 'package:consultorio_medico/views/components/info_row.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/pago.dart';
+
 class AppointmentDetailsScreen extends StatelessWidget {
   final Cita cita;
   final String nombreMedico;
   final String nombreSede;
+  final Pago? pago;
+
   const AppointmentDetailsScreen(
       {super.key,
       required this.cita,
       required this.nombreMedico,
-      required this.nombreSede});
+      required this.nombreSede,
+      this.pago});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +25,8 @@ class AppointmentDetailsScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text("Detalles de cita"),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
+      child: Padding(
         padding: EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -31,7 +37,7 @@ class AppointmentDetailsScreen extends StatelessWidget {
               height: 42,
             ),
             buildInfoRow(
-                "Fecha: ", DateFormat('dd-MM-yyyy').format(cita.fecha)),
+                "Fecha: ", DateFormat('dd-MM-yyyy HH:mm').format(cita.fecha)),
             SizedBox(
               height: 15,
             ),
@@ -82,14 +88,24 @@ class AppointmentDetailsScreen extends StatelessWidget {
                   activeColor: Theme.of(context).primaryColor,
                   onChanged: (bool value) {},
                 )),
-            SizedBox(
-              height: 10,
-            ),
-            Text(
-                "Para ${UsuarioProvider.instance.usuarioActual.sendNotifications ? "desactivar" : "activar"} las notificaciones, ve a la pestaña perfil > ${UsuarioProvider.instance.usuarioActual.sendNotifications ? "desactivar" : "activar"} notificaciones"),
+            //SizedBox(height: 10),
+            //Text("Para ${UsuarioProvider.instance.usuarioActual.sendNotifications ? "desactivar" : "activar"} las notificaciones, ve a la pestaña perfil > ${UsuarioProvider.instance.usuarioActual.sendNotifications ? "desactivar" : "activar"} notificaciones"),
+            SizedBox(height: 30,),
+            if (cita.estado == "FINALIZADO" && pago != null) ...[
+              Text("Información de pago:", style: Theme.of(context).textTheme.bodyLarge,),
+              SizedBox(height: 15,),
+              buildInfoRow("PagoId:", pago!.id),
+              SizedBox(height: 15,),
+              buildInfoRow("Fecha:",
+                  DateFormat('dd/MM/yyyy HH:mm').format(pago!.fecha)),
+              SizedBox(height: 15,),
+              buildInfoRow("Monto recibido:", '${pago!.monto}'),
+              SizedBox(height: 15,),
+              buildInfoRow("Motivo:", pago!.motivo)
+            ]
           ],
         ),
       ),
-    );
+    ));
   }
 }

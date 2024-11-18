@@ -2,6 +2,7 @@ import 'package:consultorio_medico/models/cita.dart';
 import 'package:consultorio_medico/models/providers/cita_provider.dart';
 import 'package:consultorio_medico/models/providers/usuario_provider.dart';
 import 'package:consultorio_medico/models/usuario.dart';
+import 'package:consultorio_medico/views/appointment_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/medico.dart';
@@ -103,8 +104,8 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _listaCitas(BuildContext context, List<Cita> citas) {
-    return SingleChildScrollView(
-      child: Column(
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (citas.isNotEmpty)
             ...citas.map((cita) => FutureBuilder<Widget>(
@@ -124,7 +125,6 @@ class HomeScreenState extends State<HomeScreen> {
             Center(child: Text("No hay citas para mostrar")),
           SizedBox(height: 62),
         ],
-      ),
     );
   }
 
@@ -132,7 +132,9 @@ class HomeScreenState extends State<HomeScreen> {
     final Medico? medico = await MedicoProvider.instance.getRegistro(cita.idMedico);
     final Sede? sede = await SedeProvider.instance.getRegistro(cita.idSede);
 
-    return Card(
+    return GestureDetector(
+    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AppointmentDetailsScreen(cita: cita, nombreMedico: medico!.nombre, nombreSede: sede!.nombre,))),
+        child: Card(
         margin: EdgeInsets.symmetric(vertical: 10.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         elevation: 3,
@@ -233,6 +235,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
             ],
           ),
+        ),
         ),
     );
   }

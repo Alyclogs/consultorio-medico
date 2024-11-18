@@ -37,7 +37,10 @@ class _LoginScreenState extends State<LoginScreen> {
           setState(() {
             bd.usuarioActual = usuario!;
           });
+          await UsuarioProvider.instance.guardarSesion(dni);
+          print("Sesion guardada " + dni);
           Navigator.pop(context);
+
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (context) => BottomNavBar()));
           return;

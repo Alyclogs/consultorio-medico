@@ -69,7 +69,7 @@ class PaymentWebViewState extends State<PaymentWebView> {
   }
 
   Future<String?> _getConfig() async {
-    var url = Uri.parse('http://34.136.53.241:3000/url');
+    var url = Uri.parse('https://7p85gpqf-3000.brs.devtunnels.ms/url');
     String amountInteger = '${(widget.appointment.costo * 100).toInt()}';
 
     var body = {
@@ -129,13 +129,15 @@ class PaymentWebViewState extends State<PaymentWebView> {
                           .addRegistro(widget.appointment);
                       final pago = await CitaProvider.instance
                           .getPago(widget.appointment.id);
-                      Navigator.pushReplacement(
+                      Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => SuccessPage(pago: pago, pdfUrl: pdfUrl,)));
+                              builder: (context) => SuccessPage(pago: pago)),
+                          (_) => false);
                       return NavigationActionPolicy.CANCEL;
                     }
                     if (uri.toString().toLowerCase().endsWith('pdf')) {
+                      print(uri.toString());
                       await launchUrl(uri);
                       setState(() {
                         pdfUrl = uri;

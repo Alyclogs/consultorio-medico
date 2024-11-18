@@ -74,8 +74,8 @@ class MedicArtApp extends StatelessWidget {
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
             overlayColor: Color(0xFF5494a3),
           ),
-          yearForegroundColor: WidgetStatePropertyAll(Colors.transparent),
-          yearStyle: TextStyle(fontWeight: FontWeight.normal),
+          //yearForegroundColor: WidgetStatePropertyAll(Colors.grey[600]),
+          yearStyle: TextStyle(fontWeight: FontWeight.normal, color: Colors.grey[600]),
           dayStyle: TextStyle(fontFamily: 'Poppins', color: Colors.grey[600]),
           weekdayStyle: TextStyle(
               fontFamily: 'Poppins',

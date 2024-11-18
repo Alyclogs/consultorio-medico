@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:consultorio_medico/models/usuario.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UsuarioProvider{
   static final UsuarioProvider instance = UsuarioProvider._init();
@@ -22,8 +23,8 @@ class UsuarioProvider{
     await bd.doc(id).set(usuario.toJson());
   }
 
-  Future<void> updateRegistro(Usuario usuario, String id) async {
-    await bd.doc(id).update(usuario.toJson());
+  Future<void> updateRegistro(Usuario usuario) async {
+    await bd.doc(usuario.id).update(usuario.toJson());
   }
 
   Future<void> deleteRegistro(String id) async {
@@ -33,5 +34,20 @@ class UsuarioProvider{
   Future<bool> validarUsuario(String id, String pass) async {
     final registro = await bd.doc(id).get();
     return Usuario.fromJson(registro.data() as Map<String, dynamic>, registro.id).contrasena == pass;
+  }
+
+  Future<void> guardarSesion(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('usuario_id', id);
+  }
+
+  Future<String?> obtenerSesionGuardada() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('usuario_id');
+  }
+
+  Future<void> cerrarSesion() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('usuario_id');
   }
 }

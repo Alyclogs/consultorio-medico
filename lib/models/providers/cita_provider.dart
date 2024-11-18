@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:consultorio_medico/models/cita.dart';
 import 'package:consultorio_medico/models/pago.dart';
+import 'package:flutter/material.dart';
 
 class CitaProvider {
   static final CitaProvider instance = CitaProvider._init();
@@ -50,6 +51,30 @@ class CitaProvider {
     await bd.doc(id).delete();
   }
 
+  Future<List<TimeOfDay>> obtenerHorariosOcupados(DateTime fechaSeleccionada) async {
+    try {
+      final inicioDelDia = DateTime(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day, 0, 0, 0);
+      final finDelDia = DateTime(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day, 23, 59, 59);
+
+      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('citas')
+          .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicioDelDia))
+          .where('fecha', isLessThanOrEqualTo: Timestamp.fromDate(finDelDia))
+          .get();
+
+      List<TimeOfDay> horariosOcupados = querySnapshot.docs.map((doc) {
+        Timestamp timestamp = doc['fecha'];
+        DateTime dateTime = timestamp.toDate();
+        return TimeOfDay(hour: dateTime.hour, minute: dateTime.minute);
+      }).toList();
+
+      return horariosOcupados;
+    } catch (e) {
+      debugPrint('Error al obtener horarios ocupados: $e');
+      return [];
+    }
+  }
+
   Future<String> generarNuevoId(DateTime fecha) async {
     QuerySnapshot snapshot = await FirebaseFirestore.instance
         .collection('citas')
@@ -59,7 +84,7 @@ class CitaProvider {
         isLessThanOrEqualTo: DateTime(fecha.year, fecha.month, fecha.day, 23, 59, 59))
         .get();
 
-    Set<String> idsExistentes = snapshot.docs.map((doc) => doc['id'] as String).toSet();
+    Set<String> idsExistentes = snapshot.docs.map((doc) => doc.id).toSet();
 
     String nuevoId;
     Random random = Random();

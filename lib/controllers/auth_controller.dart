@@ -8,6 +8,7 @@ class AuthController {
       'Authorization': 'Bearer ${dotenv.env['FACTILIZA_TOKEN']}',
     },);
     final data = json.decode(response.body);
+    print(data);
     if (response.statusCode == 200) {
       if ('${(data["data"]["nombres"] as String).trim()} ${(data["data"]["apellido_paterno"] as String).trim()} ${(data["data"]["apellido_materno"] as String).trim()}' != nombre.trim().toUpperCase()) {
         return 400;

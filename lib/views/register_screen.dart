@@ -51,7 +51,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (existe == null) {
           if (await AuthController.validarDNI(dni, nombre) != 200) {
             Navigator.pop(context);
-            _showErrorDialog("El DNI ingresado no es válido o no coincide con el nombre ingresado");
+            _showErrorDialog(
+                "El DNI ingresado no es válido o los datos ingresados no coinciden");
             return;
           } else {
             final newUser = Usuario(
@@ -65,8 +66,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             UsuarioProvider.instance.usuarioActual = newUser;
 
             Navigator.pop(context);
-            Navigator.pushReplacement(
-                context,
+            Navigator.pushReplacement(context,
                 MaterialPageRoute(builder: (context) => BottomNavBar()));
             return;
           }
@@ -337,7 +337,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (value == null ||
             value.isEmpty ||
             (maxLength != null && value.length != maxLength)) {
-          return 'Por favor complete este campo';
+          if (password &&
+              value?.length != 6 &&
+              !RegExp(".*[0-9].*").hasMatch(value ?? '') &&
+              !RegExp('.*[a-z].*').hasMatch(value ?? '') &&
+              !RegExp('.*[A-Z].*').hasMatch(value ?? '')) {
+            return 'La contraseña debe tener al menos 6 carácteres, letras mayúsculas y minúsculas y números';
+          }
+            return 'Por favor complete este campo';
         }
         return null;
       },

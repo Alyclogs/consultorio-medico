@@ -7,8 +7,7 @@ import 'components/info_row.dart';
 
 class SuccessPage extends StatelessWidget {
   final Pago pago;
-  final Uri pdfUrl;
-  const SuccessPage({super.key, required this.pago, required this.pdfUrl});
+  const SuccessPage({super.key, required this.pago});
 
   @override
   Widget build(BuildContext context) {
@@ -28,37 +27,39 @@ class SuccessPage extends StatelessWidget {
             ),
             Text("Tu cita fue agendada correctamente"),
             SizedBox(
+              height: 15,
+            ),
+            Text(pago.idCita, style: TextStyle(fontSize: 42, color: Theme.of(context).primaryColor),),
+            SizedBox(
               height: 40,
             ),
             Text("Detalle de pago:"),
             SizedBox(
               height: 10,
             ),
-            Card(
-              child: Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(35),
-                  border: Border.all(
-                    color: Colors.grey,
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(35),
+                border: Border.all(
+                  color: Colors.grey,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    "Detalles de pago:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      "Detalles de pago:",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    buildInfoRow("PagoId:", pago.id),
-                    buildInfoRow("Fecha:",
-                        DateFormat('dd/MM/yyyy HH:mm').format(pago.fecha)),
-                    buildInfoRow("Monto recibido:", '${pago.monto}'),
-                    buildInfoRow("Motivo:", pago.motivo)
-                  ],
-                ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  buildInfoRow("PagoId:", pago.id),
+                  buildInfoRow("Fecha:",
+                      DateFormat('dd/MM/yyyy HH:mm').format(pago.fecha)),
+                  buildInfoRow("Monto recibido:", '${pago.monto}'),
+                  buildInfoRow("Motivo:", pago.motivo)
+                ],
               ),
             ),
             SizedBox(
@@ -77,7 +78,10 @@ class SuccessPage extends StatelessWidget {
                       backgroundColor: Color(0xFF5494a3)),
                   child: Text("Regresar al inicio")),
             ),
-            SizedBox(height: 15,),
+            SizedBox(
+              height: 15,
+            ),
+            /*
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -91,6 +95,7 @@ class SuccessPage extends StatelessWidget {
                   icon: Icon(Icons.picture_as_pdf, color: Theme.of(context).primaryColor,),
                   label: Text("Descargar pdf")),
             ),
+             */
           ],
         ),
       ),

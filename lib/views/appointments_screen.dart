@@ -11,6 +11,7 @@ import 'package:consultorio_medico/views/new_appointment_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/cita.dart';
 
+import '../models/pago.dart';
 import '../models/sede.dart';
 import 'appointment_details_screen.dart';
 
@@ -50,7 +51,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     }
   }
 
-  void _showDeleteDialog(Cita cita) {
+  void _showDeleteDialog(Cita cita) async {
     showDialog(
       context: context,
       builder: (context) {
@@ -68,6 +69,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
               onPressed: () async {
                 loadingScreen(context);
                 await bd.deleteRegistro(cita.id);
+                await _loadCitas();
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
               },
@@ -112,11 +114,17 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => NewAppointmentScreen()));
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => NewAppointmentScreen()));
           },
           backgroundColor: Theme.of(context).primaryColor,
           shape: CircleBorder(),
-          child: const Icon(Icons.add, color: Colors.white,),
+          child: const Icon(
+            Icons.add,
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -153,6 +161,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final Medico? medico =
         await MedicoProvider.instance.getRegistro(cita.idMedico);
     final Sede? sede = await SedeProvider.instance.getRegistro(cita.idSede);
+    final Pago? pago = await CitaProvider.instance.getPago(cita.id);
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -162,6 +171,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                     cita: cita,
                     nombreMedico: medico?.nombre ?? "Médico",
                     nombreSede: sede?.nombre ?? "Sede",
+                    pago: pago,
                   ))),
       child: Card(
         margin: EdgeInsets.symmetric(vertical: 10.0),
@@ -189,17 +199,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                            medico != null
-                                ? medico.nombre
-                                : "Médico",
+                        Text(medico != null ? medico.nombre : "Médico",
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                                 color: Color(0xff0c4454))),
                         SizedBox(height: 10),
-                        Text(
-                            sede != null ? sede.nombre : "Sede",
+                        Text(sede != null ? sede.nombre : "Sede",
                             style: TextStyle(fontSize: 11)),
                         SizedBox(height: 20),
                         Text(cita.motivo, style: TextStyle(fontSize: 13)),
@@ -213,13 +219,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                       iconColor: Colors.grey[700],
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25)),
-                      onSelected: (value) {
+                      onSelected: (value) async {
                         if (value == 'Modificar_${cita.id}') {
                           Navigator.push(
                               context,
                               MaterialPageRoute(
                                   builder: (context) => EditAppointmentScreen(
                                       citaSeleccionada: cita)));
+                          await _loadCitas();
                         } else if (value == 'Eliminar_${cita.id}') {
                           _showDeleteDialog(cita);
                         }
@@ -268,6 +275,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                         style: TextStyle(fontSize: 11)),
                   ],
                 ),
+              /*
               if (cita.estado == "FINALIZADO")
                 Container(
                   width: double.infinity,
@@ -298,6 +306,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                     ),
                   ),
                 ),
+               */
             ],
           ),
         ),
