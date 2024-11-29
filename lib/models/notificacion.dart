@@ -7,13 +7,17 @@ class Notificacion {
   String usuarioId;
   String title;
   String body;
-  DateTime timestamp;
+  DateTime? timestamp;
 
-  Notificacion(this.id, this.citaId, this.fechaCita, this.usuarioId, this.title, this.body, this.timestamp);
+  Notificacion(this.id, this.citaId, this.fechaCita, this.usuarioId, this.title, this.body);
 
   factory Notificacion.fromJson(Map<String, dynamic> data, int id) {
-    return Notificacion(id, data["citaId"] as String, (data["fechaCita"] as Timestamp).toDate(), data['usuarioId'] as String, data["title"] as String,
-        data["body"] as String, (data["timestamp"] as Timestamp).toDate());
+    final notification = Notificacion(id, data["citaId"] as String, (data["fechaCita"] as Timestamp).toDate(), data['usuarioId'] as String, data["title"] as String,
+        data["body"] as String);
+    if (data["timestamp"] != null) {
+      notification.timestamp = (data["timestamp"] as Timestamp).toDate();
+    }
+    return notification;
   }
 
   Map<String, dynamic> toJson() {

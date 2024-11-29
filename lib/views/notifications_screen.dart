@@ -1,8 +1,6 @@
-import 'package:consultorio_medico/controllers/notifications_controller.dart';
 import 'package:consultorio_medico/models/notificacion.dart';
 import 'package:consultorio_medico/models/providers/notificacion_provider.dart';
 import 'package:consultorio_medico/models/providers/usuario_provider.dart';
-import 'package:consultorio_medico/views/components/loading_screen.dart';
 import 'package:consultorio_medico/views/components/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -27,7 +25,6 @@ class _NotificationScreenState extends State<NotificationsScreen> {
 
   void _loadNotifications() async {
     try {
-      // Simula la carga de notificaciones
       List<Notificacion> notifications =
           await bd.getNotifications(UsuarioProvider.instance.usuarioActual.id);
       setState(() {
@@ -53,7 +50,7 @@ class _NotificationScreenState extends State<NotificationsScreen> {
           : _notificaciones.isEmpty
               ? Center(child: Text('No tienes notificaciones'))
               : Padding(
-                  padding: const EdgeInsets.all(32.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
                   child: ListView.builder(
                     itemCount: _notificaciones.length,
                     itemBuilder: (context, index) {
@@ -63,7 +60,8 @@ class _NotificationScreenState extends State<NotificationsScreen> {
                           final exist = await NotificationProvider.instance
                               .navigateToAppointmentScreen(noti.citaId);
                           if (!exist) {
-                            showMessenger(context, 'No se ha encontrado información sobre la cita');
+                            showMessenger(context,
+                                'No se ha encontrado información sobre la cita');
                           }
                         },
                         child: Card(
@@ -75,8 +73,38 @@ class _NotificationScreenState extends State<NotificationsScreen> {
                           child: Container(
                             padding: EdgeInsets.all(10),
                             child: ListTile(
-                              title: Text(noti.title, style: TextStyle(fontSize: 16),),
-                              subtitle: Text('${noti.body}\n\n${DateFormat('dd/MM/yyyy hh:mm a').format(noti.timestamp)}'),
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    noti.title,
+                                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                                    textAlign: TextAlign.start,
+                                  ),
+                                  SizedBox(
+                                    height: 15,
+                                  ),
+                                ],
+                              ),
+                              subtitle: Column(
+                                children: [
+                                  Text(
+                                    noti.body,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    textAlign: TextAlign.start,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        DateFormat('dd/MM/yyyy hh:mm a').format(noti.timestamp!),
+                                        style: Theme.of(context).textTheme.bodySmall,
+                                        textAlign: TextAlign.end,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                               isThreeLine: true,
                             ),
                           ),

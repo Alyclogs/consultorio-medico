@@ -11,8 +11,8 @@ class NotificationsController {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   final AndroidNotificationChannel channel = const AndroidNotificationChannel(
-    'Channel_id',
-    'Channel_title',
+    'appointment_channel',
+    'Appointment Notifications',
     description: 'This channel is used for important notifications.',
     importance: Importance.high,
     playSound: true,
@@ -51,7 +51,7 @@ class NotificationsController {
   }) async {
     try {
       final location = tz.getLocation('America/Lima');
-      final scheduledTZTime = tz.TZDateTime.from(notification.timestamp, location);
+      final scheduledTZTime = tz.TZDateTime.from(notification.timestamp!, location);
 
       var androidDetails = AndroidNotificationDetails(
         'appointment_channel',
@@ -84,8 +84,8 @@ class NotificationsController {
   Future<void> sendNotification(Notificacion notification) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'channel_id',
-      'channel_name',
+          'appointment_channel',
+          'Appointment Notifications',
       importance: Importance.max,
       priority: Priority.high,
       showWhen: true,
@@ -94,12 +94,40 @@ class NotificationsController {
         NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await _flutterLocalNotificationsPlugin.show(
-      0,
+      notification.id,
       notification.title,
       notification.body,
       payload: notification.citaId,
       platformChannelSpecifics,
     );
+  }
+
+  Future<void> updateNotification(Notificacion notification) async {
+    try {
+      await _flutterLocalNotificationsPlugin.cancel(notification.id);
+
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+      AndroidNotificationDetails(
+        'appointment_channel',
+        'Appointment Notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+        showWhen: true,
+      );
+      const NotificationDetails platformChannelSpecifics =
+      NotificationDetails(android: androidPlatformChannelSpecifics);
+      await NotificationProvider.instance.updateNotification(notification);
+
+      await _flutterLocalNotificationsPlugin.show(
+        notification.id,
+        notification.title,
+        notification.body,
+        payload: notification.citaId,
+        platformChannelSpecifics,
+      );
+    } catch (e) {
+      print("Error al actualizar la notificación: $e");
+    }
   }
 
   Future<void> deleteNotification(int notificationId) async {
@@ -112,14 +140,14 @@ class NotificationsController {
     }
   }
 
-  Future<void> updateNotification({
+  Future<void> updateNotificationScheduled({
     required Notificacion notification,
   }) async {
     try {
       await flutterLocalNotificationsPlugin.cancel(notification.id);
 
       final location = tz.getLocation('America/Lima');
-      final scheduledTZTime = tz.TZDateTime.from(notification.timestamp, location);
+      final scheduledTZTime = tz.TZDateTime.from(notification.timestamp!, location);
 
       var androidDetails = AndroidNotificationDetails(
         'appointment_channel',

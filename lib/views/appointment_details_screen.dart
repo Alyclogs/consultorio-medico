@@ -29,7 +29,7 @@ class AppointmentDetailsScreen extends StatelessWidget {
                 SizedBox(
                   height: 42,
                 ),
-                buildInfoRow("Fecha: ",
+                buildInfoRow("Fecha y hora de la cita: ",
                     DateFormat('dd-MM-yyyy HH:mm').format(cita.fecha)),
                 SizedBox(
                   height: 15,

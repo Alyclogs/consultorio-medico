@@ -8,6 +8,7 @@ import 'package:consultorio_medico/models/providers/usuario_provider.dart';
 import 'package:consultorio_medico/models/usuario.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../controllers/notifications_controller.dart';
 import '../models/notificacion.dart';
@@ -15,9 +16,8 @@ import 'error_page.dart';
 
 class PaymentWebView extends StatefulWidget {
   const PaymentWebView(
-      {super.key, required this.appointment, required this.notification});
+      {super.key, required this.appointment});
   final Cita appointment;
-  final Notificacion notification;
 
   @override
   PaymentWebViewState createState() => PaymentWebViewState();
@@ -98,16 +98,27 @@ class PaymentWebViewState extends State<PaymentWebView> {
   }
 
   Future<void> _goToSuccessPage() async {
-    await CitaProvider.instance.addRegistro(widget.appointment);
-    final pago = await CitaProvider.instance.getPago(widget.appointment.id);
+    final Cita cita = widget.appointment;
+    await CitaProvider.instance.addRegistro(cita);
+    final pago = await CitaProvider.instance.getPago(cita.id);
+    final scheduledTime = cita.fecha.subtract(Duration(hours: 1));
+    final notification = Notificacion(
+        cita.id.hashCode,
+        cita.id,
+        cita.fecha,
+        cita.dniUsuario,
+        '⏰ Cita en 1 hora',
+        'Tienes una cita con ${cita.nomMedico} a las ${DateFormat('hh:mm a').format(cita.fecha)}.');
 
-    if (DateTime.now().difference(widget.appointment.fecha) >
+    if (cita.fecha.difference(DateTime.now()) >
         Duration(minutes: 60)) {
+      notification.timestamp = scheduledTime;
       await NotificationsController.instance
-          .scheduleNotification(notification: widget.notification);
+          .scheduleNotification(notification: notification);
     } else {
+      notification.timestamp = DateTime.now();
       await NotificationsController.instance
-          .sendNotification(widget.notification);
+          .sendNotification(notification);
     }
 
     Navigator.pushAndRemoveUntil(

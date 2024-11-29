@@ -122,9 +122,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                                       onVerified: () => Navigator.of(context)
                                           .pushReplacement(MaterialPageRoute(
                                               builder: (context) =>
-                                                  ChangePasswordScreen(
-                                                      matchedUser:
-                                                          currentUser))))));
+                                                  ChangePasswordScreen())))));
                             },
                             style: FilledButton.styleFrom(
                                 padding: EdgeInsets.symmetric(vertical: 12),

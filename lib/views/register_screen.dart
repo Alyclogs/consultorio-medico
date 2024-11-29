@@ -76,6 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else {
         loadingScreen(context);
         existe = await bd.getRegistro(dni);
+        print('Usuario encontrado: $dni');
 
         if (existe == null) {
           if (await AuthController.validarDNI(
@@ -96,7 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   MaterialPageRoute(
                       builder: (context) => VerifyPhoneScreen(
                             telephoneNumber: _telfController.text,
-                            onVerified: () {
+                            onVerified: () async {
                               final newUser = Usuario(
                                   id: dni,
                                   nombre: nombre,
@@ -107,7 +108,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               newUser.contrasena = pass;
                               UsuarioProvider.instance
                                   .addRegistro(newUser, dni);
+
                               UsuarioProvider.instance.usuarioActual = newUser;
+                              await UsuarioProvider.instance.guardarSesion(dni);
 
                               Navigator.pushReplacement(
                                   context,
@@ -123,20 +126,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
               }
             }
           }
-        }
-        if (mounted) {
-          Navigator.pop(context);
-          showInfoDialog(
-            context,
-            "Error",
-            "Ya hay una cuenta asociada al número de DNI, si no recuerdas tu contraseña, por favor reestablécela ",
-            linkText: 'aquí',
-            onClickLink: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
-              );
-            },
-          );
+        } else {
+          if (mounted) {
+            Navigator.pop(context);
+            showInfoDialog(
+              context,
+              "Error",
+              "Ya hay una cuenta asociada al número de DNI, si no recuerdas tu contraseña, por favor reestablécela ",
+              linkText: 'aquí',
+              onClickLink: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (context) => ForgotPasswordScreen()),
+                );
+              },
+            );
+          }
         }
       }
     }

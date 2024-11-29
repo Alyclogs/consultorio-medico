@@ -48,7 +48,7 @@ Future<String?> sendSMS(String number, String appSignature) async {
       final body = json.encode({
         'recipients': ['+51$number'],
         'message': """
-        <#> MedicArt: Su código de verificación es $otpCode
+        MedicArt: Su código de verificación es $otpCode
         
         $appSignature
         """,

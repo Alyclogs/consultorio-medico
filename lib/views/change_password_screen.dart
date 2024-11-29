@@ -5,8 +5,7 @@ import '../models/usuario.dart';
 import 'components/utils.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
-  final Usuario matchedUser;
-  const ChangePasswordScreen({super.key, required this.matchedUser});
+  const ChangePasswordScreen({super.key});
 
   @override
   State<StatefulWidget> createState() => _ChangePasswordScreenState();
@@ -18,13 +17,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController _newPassController2 = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _passVisible = false;
+  final currentUser = UsuarioProvider.instance.usuarioActual;
 
   _changePassword() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
       final prevPass = Usuario.encryptPassword(_previousPassController.text);
-      if (prevPass != widget.matchedUser.contrasena) {
+      if (prevPass != currentUser.contrasena) {
         showInfoDialog(context, 'Error', "La contraseña actual es incorrecta");
         return;
       }
@@ -47,10 +47,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         return;
       }
       setState(() {
-        widget.matchedUser.contrasena = _newPassController.text;
+        currentUser.contrasena = _newPassController.text;
       });
       loadingScreen(context);
-      await UsuarioProvider.instance.updateRegistro(widget.matchedUser);
+      await UsuarioProvider.instance.updateRegistro(currentUser);
+      setState(() {
+        UsuarioProvider.instance.usuarioActual = currentUser;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Contraseña actualizada')),
       );

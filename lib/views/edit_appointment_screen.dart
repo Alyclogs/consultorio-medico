@@ -123,9 +123,7 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
       int estado = 401;
       loadingScreen(context);
       estado = await AuthController.validarDNI(
-          _dniPaciente.text,
-          _nombre.text,
-          _esMasculino ? 'M' : 'F');
+          _dniPaciente.text, _nombre.text, _esMasculino ? 'M' : 'F');
       Navigator.pop(context);
 
       if (estado == 200) {
@@ -200,17 +198,24 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
           estado: "PENDIENTE");
 
       await bd.updateRegistro(appointment);
-
       final scheduledTime = fechaHora.subtract(Duration(hours: 1));
-      await NotificationsController.instance.updateNotification(
-          notification: Notificacion(
-              appointment.id.hashCode,
-              appointment.id,
-              appointment.fecha,
-              appointment.dniUsuario,
-              '⏰ Cita en 1 hora',
-              'Tienes una cita con ${appointment.nomMedico} a las ${DateFormat('HH:mm').format(fechaHora)}.',
-              scheduledTime));
+      final notification = Notificacion(
+          appointment.id.hashCode,
+          appointment.id,
+          appointment.fecha,
+          appointment.dniUsuario,
+          '⏰ Cita en 1 hora',
+          'Tienes una cita con ${appointment.nomMedico} a las ${DateFormat('hh:mm a').format(fechaHora)}.');
+
+      if (appointment.fecha.difference(DateTime.now()) >
+          Duration(minutes: 60)) {
+        notification.timestamp = scheduledTime;
+        await NotificationsController.instance
+            .updateNotificationScheduled(notification: notification);
+      } else {
+        notification.timestamp = DateTime.now();
+        await NotificationsController.instance.updateNotification(notification);
+      }
 
       Navigator.pushReplacement(
           context,

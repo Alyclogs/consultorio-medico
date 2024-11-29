@@ -158,21 +158,10 @@ class NewAppointmentScreenState extends State<NewAppointmentScreen> {
           costo: _medicoSeleccionado!.costoCita,
           estado: "PENDIENTE");
 
-      await bd.addRegistro(appointment);
-      final scheduledTime = fechaHora.subtract(Duration(hours: 1));
-      final notification = Notificacion(
-          appointment.id.hashCode,
-          appointment.id,
-          appointment.fecha,
-          appointment.dniUsuario,
-          '⏰ Cita en 1 hora',
-          'Tienes una cita con ${appointment.nomMedico} a las ${DateFormat('HH:mm').format(fechaHora)}.',
-          scheduledTime);
-
       Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => PaymentWebView(appointment: appointment, notification: notification,)));
+              builder: (context) => PaymentWebView(appointment: appointment)));
     }
   }
 
