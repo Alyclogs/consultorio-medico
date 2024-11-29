@@ -1,21 +1,24 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
+
 class Usuario {
   final String id;
   final String nombre;
   final String telefono;
   late String contrasena = "";
-  final int edad;
+  final DateTime fecha_nac;
   final String genero;
   late String foto = "";
-  late bool sendNotifications = false;
 
-  Usuario({required this.id, required this.nombre, required this.telefono, required this.edad, required this.genero});
+  Usuario({required this.id, required this.nombre, required this.telefono, required this.fecha_nac, required this.genero});
 
   factory Usuario.fromJson (Map<String, dynamic> data, String id) {
     Usuario usuario = Usuario(id: id, nombre: data["nombre"],
-        telefono: data["telefono"], edad: data["edad"], genero: data["genero"]);
+        telefono: data["telefono"], fecha_nac: (data["fecha_nac"] as Timestamp).toDate(), genero: data["genero"]);
     usuario.contrasena = data["contrasena"] ?? "";
     usuario.foto = data["foto"] ?? "";
-    usuario.sendNotifications = data["sendNotifications"] ?? false;
     return usuario;
   }
 
@@ -23,12 +26,17 @@ class Usuario {
     return {
       "nombre": nombre,
       "telefono": telefono,
-      "contrasena": contrasena,
-      "edad": edad,
+      "contrasena": encryptPassword(contrasena),
+      "fecha_nac": fecha_nac,
       "genero": genero,
-      "foto": foto,
-      "sendNotifications": sendNotifications ?? false
+      "foto": foto
     };
+  }
+
+  static String encryptPassword(String password) {
+    final bytes = utf8.encode(password);
+    final hash = sha256.convert(bytes);
+    return hash.toString();
   }
 }
 

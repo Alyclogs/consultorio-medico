@@ -1,15 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:consultorio_medico/models/medico.dart';
+import 'package:flutter/material.dart';
 
-class MedicoProvider{
+class MedicoProvider {
   static final MedicoProvider instance = MedicoProvider._init();
-  final CollectionReference bd = FirebaseFirestore.instance.collection('medicos');
+  final CollectionReference bd =
+      FirebaseFirestore.instance.collection('medicos');
 
   MedicoProvider._init();
 
   Future<List<Medico>> getRegistros() async {
     QuerySnapshot querySnapshot = await bd.get();
-    return querySnapshot.docs.map((doc) => Medico.fromJson(doc.data() as Map<String, dynamic>, doc.id)).toList();
+    return querySnapshot.docs
+        .map((doc) =>
+            Medico.fromJson(doc.data() as Map<String, dynamic>, doc.id))
+        .toList();
+  }
+
+  Future<List<Medico>> getRegistrosPorSede(String idSede) async {
+    QuerySnapshot querySnapshot =
+        await bd.where('idSede', isEqualTo: idSede).get();
+    return querySnapshot.docs
+        .map((doc) =>
+            Medico.fromJson(doc.data() as Map<String, dynamic>, doc.id))
+        .toList();
   }
 
   Future<Medico?> getRegistro(String id) async {
@@ -17,9 +31,32 @@ class MedicoProvider{
     return Medico.fromJson(doc.data() as Map<String, dynamic>, doc.id);
   }
 
-  Future<Medico?> getRegistroFromNombre(String nombre) async {
-    final docs = await bd.where('nombre', isEqualTo: nombre).get();
-    return docs.docs.isNotEmpty ? docs.docs.map((doc) => Medico.fromJson(doc.data() as Map<String, dynamic>, doc.id)).first : null;
+  Future<List<DateTime>?> getHorarioActual(
+      String id, DateTime fechaSeleccionada) async {
+    final doc = await bd.doc(id).get();
+    final docData = doc.data() as Map<String, dynamic>;
+    final disponibilidad = Map<String, String>.from(
+        docData["disponibilidad"] as Map<String, dynamic>);
+
+    const diasReversoMap = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'];
+    final String diaActual = diasReversoMap[fechaSeleccionada.weekday - 1];
+
+    final String? rangoHorario = disponibilidad[diaActual];
+    if (rangoHorario == null || rangoHorario.toLowerCase() == "no definido") {
+      return null;
+    }
+    final horas = rangoHorario.split('-');
+    if (horas.length != 2) return null;
+
+    DateTime parseFecha(String hora) {
+      final partes = hora.split(':').map(int.parse).toList();
+      return DateTime(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day, partes[0], partes[1]);
+    }
+
+    return [
+      parseFecha(horas[0]),
+      parseFecha(horas[1]),
+    ];
   }
 
   Future<void> addRegistro(Medico usuario) async {

@@ -3,7 +3,7 @@ import 'package:consultorio_medico/views/components/bottom_navbar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'components/info_row.dart';
+import 'components/utils.dart';
 
 class SuccessPage extends StatelessWidget {
   final Pago pago;

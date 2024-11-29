@@ -1,13 +1,16 @@
 import 'package:consultorio_medico/controllers/auth_controller.dart';
+import 'package:consultorio_medico/controllers/sms_sender.dart';
+import 'package:consultorio_medico/views/forgot_password_screen.dart';
 import 'package:consultorio_medico/views/components/bottom_navbar.dart';
 import 'package:consultorio_medico/views/components/loading_screen.dart';
 import 'package:consultorio_medico/views/login_screen.dart';
-import 'package:flutter/gestures.dart';
+import 'package:consultorio_medico/views/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import '../controllers/net_controller.dart';
 import '../models/providers/usuario_provider.dart';
 import '../models/usuario.dart';
+import './components/utils.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -29,6 +32,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
   late bool _passVisible = false;
   late bool _esMasculino = false;
   late DateTime _selectedDate = DateTime.now();
+  final netController = NetworkController();
+
+  @override
+  void initState() {
+    super.initState();
+    netController.checkInternetConnection(
+        onInternetConnected: _onInternetConnected,
+        onInternetDisconnected: _onInternetDisconnected);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    netController.listener.cancel();
+  }
+
+  void _onInternetConnected() {
+    setState(() {});
+  }
+
+  void _onInternetDisconnected() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => SplashScreen(action: 'checkInternet')));
+  }
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
@@ -42,94 +71,75 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Usuario? existe;
 
       if (pass != pass2) {
-        _showErrorDialog("Las contraseñas no coinciden");
+        showInfoDialog(context, "Error", "Las contraseñas no coinciden");
         return;
       } else {
         loadingScreen(context);
         existe = await bd.getRegistro(dni);
 
         if (existe == null) {
-          if (await AuthController.validarDNI(dni, nombre) != 200) {
-            Navigator.pop(context);
-            _showErrorDialog(
-                "El DNI ingresado no es válido o los datos ingresados no coinciden");
-            return;
+          if (await AuthController.validarDNI(
+                  dni, nombre, _esMasculino ? "M" : "F", fecha: _selectedDate) !=
+              200) {
+            if (mounted) {
+              Navigator.pop(context);
+              showInfoDialog(context, "Error",
+                  "El DNI ingresado no es válido o los datos ingresados no coinciden");
+              return;
+            }
           } else {
-            final newUser = Usuario(
-                id: dni,
-                nombre: nombre,
-                telefono: telf,
-                edad: calcularEdad(_selectedDate),
-                genero: _esMasculino ? "Masculino" : "Femenino");
-            newUser.contrasena = pass;
-            UsuarioProvider.instance.addRegistro(newUser, dni);
-            UsuarioProvider.instance.usuarioActual = newUser;
+            if (mounted) Navigator.pop(context);
+            final validNumber = await validateNumber(_telfController.text);
+            if (validNumber) {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => VerifyPhoneScreen(
+                            telephoneNumber: _telfController.text,
+                            onVerified: () {
+                              final newUser = Usuario(
+                                  id: dni,
+                                  nombre: nombre,
+                                  telefono: telf,
+                                  fecha_nac: _selectedDate,
+                                  genero:
+                                      _esMasculino ? "Masculino" : "Femenino");
+                              newUser.contrasena = pass;
+                              UsuarioProvider.instance
+                                  .addRegistro(newUser, dni);
+                              UsuarioProvider.instance.usuarioActual = newUser;
 
-            Navigator.pop(context);
-            Navigator.pushReplacement(context,
-                MaterialPageRoute(builder: (context) => BottomNavBar()));
-            return;
+                              Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => BottomNavBar()));
+                            },
+                          )));
+            } else {
+              if (mounted) {
+                Navigator.pop(context);
+                showInfoDialog(
+                    context, "Error", "Ingrese un número de teléfono válido");
+              }
+            }
           }
         }
-        Navigator.pop(context);
-        _showErrorDialog(
+        if (mounted) {
+          Navigator.pop(context);
+          showInfoDialog(
+            context,
+            "Error",
             "Ya hay una cuenta asociada al número de DNI, si no recuerdas tu contraseña, por favor reestablécela ",
-            forgot: true);
+            linkText: 'aquí',
+            onClickLink: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
+              );
+            },
+          );
+        }
       }
     }
-  }
-
-  void _showErrorDialog(String msg, {bool forgot = false}) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Error'),
-          content: RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: msg,
-                  style: TextStyle(color: Colors.grey[700]),
-                ),
-                if (forgot)
-                  TextSpan(
-                    text: 'aquí',
-                    style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        decoration: TextDecoration.underline),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () {
-                        //Navigator.of(context).push(MaterialPageRoute(builder: (context) => ForgotPaswordScreen()),);
-                      },
-                  ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Aceptar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  int calcularEdad(DateTime fechaNacimiento) {
-    DateTime fechaActual = DateTime.now();
-    int edad = fechaActual.year - fechaNacimiento.year;
-
-    if (fechaActual.month < fechaNacimiento.month ||
-        (fechaActual.month == fechaNacimiento.month &&
-            fechaActual.day < fechaNacimiento.day)) {
-      edad--;
-    }
-
-    return edad;
   }
 
   @override
@@ -164,7 +174,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           SizedBox(height: 10),
                           _buildInputField(
                               context, _nombreController, "Nombre completo",
-                              caps: TextCapitalization.sentences),
+                              caps: TextCapitalization.sentences,
+                              inputType: TextInputType.text),
                           SizedBox(height: 10),
                           _buildInputField(
                               context, _telfController, "Número de teléfono",
@@ -172,7 +183,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           SizedBox(height: 10),
                           _buildInputField(
                               context, _fnacController, "Fecha de nacimiento",
-                              onTap: () async {
+                              enabled: false, onTap: () async {
                             loadingScreen(context);
                             await _selectDate(context);
                           }),
@@ -298,6 +309,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       bool password = false,
       TextInputType? inputType,
       Function()? onTap,
+      Function(String value)? onSaved,
       bool enabled = true,
       TextCapitalization? caps}) {
     return TextFormField(
@@ -334,17 +346,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       onTap: onTap,
       readOnly: !enabled,
       validator: (value) {
-        if (value == null ||
-            value.isEmpty ||
-            (maxLength != null && value.length != maxLength)) {
-          if (password &&
-              value?.length != 6 &&
-              !RegExp(".*[0-9].*").hasMatch(value ?? '') &&
-              !RegExp('.*[a-z].*').hasMatch(value ?? '') &&
-              !RegExp('.*[A-Z].*').hasMatch(value ?? '')) {
-            return 'La contraseña debe tener al menos 6 carácteres, letras mayúsculas y minúsculas y números';
-          }
-            return 'Por favor complete este campo';
+        if (value == null || value.isEmpty) {
+          return 'Por favor, rellena este campo';
+        }
+        if (value.isEmpty ||
+            (password &&
+                (value.length < 6 ||
+                    !RegExp(".*[0-9].*").hasMatch(value ?? '') ||
+                    !RegExp('.*[a-z].*').hasMatch(value ?? '') ||
+                    !RegExp('.*[A-Z].*').hasMatch(value ?? '')))) {
+          return 'La contraseña debe tener al menos 6 carácteres, letras mayúsculas y minúsculas y números';
         }
         return null;
       },
@@ -357,7 +368,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       context: context,
       initialDate: DateTime(2000),
       firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      lastDate: DateTime(DateTime.now().year - 18),
       helpText: 'Selecciona tu fecha de nacimiento',
     );
     Navigator.pop(context);
@@ -365,7 +376,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked!;
-        _fnacController.text = DateFormat('dd-MM-yyyy').format(picked);
+        _fnacController.text = DateFormat('dd/MM/yyyy').format(picked);
       });
     }
   }

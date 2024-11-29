@@ -5,10 +5,7 @@ import 'package:consultorio_medico/models/usuario.dart';
 import 'package:consultorio_medico/views/appointment_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/medico.dart';
-import '../models/providers/medico_provider.dart';
-import '../models/providers/sede_provider.dart';
-import '../models/sede.dart';
+import '../controllers/notifications_controller.dart';
 import 'new_appointment_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -63,7 +60,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
                 Flexible(
                   child: Text(
-                    'Buenos días ${currentUser.nombre.split(' ').first}',
+                    'Buen día ${currentUser.nombre.split(' ').first}',
                     style: TextStyle(fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,  // Adds ellipsis if the text overflows
                   ),
@@ -129,11 +126,10 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<Widget> _buildCita(Cita cita) async {
-    final Medico? medico = await MedicoProvider.instance.getRegistro(cita.idMedico);
-    final Sede? sede = await SedeProvider.instance.getRegistro(cita.idSede);
+    final pago = await CitaProvider.instance.getPago(cita.id);
 
     return GestureDetector(
-    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AppointmentDetailsScreen(cita: cita, nombreMedico: medico!.nombre, nombreSede: sede!.nombre,))),
+    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AppointmentDetailsScreen(cita: cita, pago: pago,))),
         child: Card(
         margin: EdgeInsets.symmetric(vertical: 10.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -161,16 +157,14 @@ class HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                            medico != null
-                                ? medico.nombre
-                                : "Médico",
+                            cita.nomMedico,
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                                 color: Color(0xff0c4454))),
                         SizedBox(height: 10),
                         Text(
-                            sede != null ? sede.nombre : "Sede",
+                            cita.nomSede,
                             style: TextStyle(fontSize: 11)),
                         SizedBox(height: 20),
                         Text(cita.motivo, style: TextStyle(fontSize: 13)),
@@ -187,7 +181,7 @@ class HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                        UsuarioProvider.instance.usuarioActual.sendNotifications
+                        NotificationsController.instance.isNotificationPermsGranted
                             ? "Alerta activada"
                             : "Alerta desactivada",
                         style: TextStyle(fontSize: 11)),

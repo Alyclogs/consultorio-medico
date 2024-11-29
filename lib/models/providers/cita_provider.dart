@@ -4,6 +4,8 @@ import 'package:consultorio_medico/models/cita.dart';
 import 'package:consultorio_medico/models/pago.dart';
 import 'package:flutter/material.dart';
 
+import 'medico_provider.dart';
+
 class CitaProvider {
   static final CitaProvider instance = CitaProvider._init();
   final CollectionReference bd = FirebaseFirestore.instance.collection('citas');
@@ -11,14 +13,21 @@ class CitaProvider {
   CitaProvider._init();
 
   Future<List<Cita>> getRegistros(String id, [String estado = ""]) async {
-    QuerySnapshot querySnapshot = await bd.where('dniPaciente', isEqualTo: id).get();
-    print(querySnapshot.docs.toList());
-    final docs = querySnapshot.docs
-        .map((doc) => Cita.fromJson(doc.data() as Map<String, dynamic>, doc.id));
+    QuerySnapshot querySnapshot =
+        await bd.where('dniUsuario', isEqualTo: id).get();
+    final docs = querySnapshot.docs.map(
+        (doc) => Cita.fromJson(doc.data() as Map<String, dynamic>, doc.id));
     if (estado.isEmpty) {
       return docs.toList();
     } else {
-      return docs.where((cita) => cita.estado == estado).toList();
+      return docs
+          .where((cita) => estado == "PENDIENTE"
+              ? cita.estado == "PENDIENTE" || cita.estado == "EN PROCESO"
+              : estado == "FINALIZADO"
+                  ? cita.estado == "FINALIZADO" ||
+                      cita.estado == "ELIMINADO POR EL USUARIO"
+                  : cita.estado == estado)
+          .toList();
     }
   }
 
@@ -28,7 +37,11 @@ class CitaProvider {
   }
 
   Future<Pago> getPago(String idCita) async {
-    final snapshot = await FirebaseFirestore.instance.collection('pagos').where('idCita', isEqualTo: idCita).limit(1).get();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('pagos')
+        .where('idCita', isEqualTo: idCita)
+        .limit(1)
+        .get();
     return snapshot.docs.map((e) => Pago.fromJson(e.data(), e.id)).toList()[0];
   }
 
@@ -51,37 +64,74 @@ class CitaProvider {
     await bd.doc(id).delete();
   }
 
-  Future<List<TimeOfDay>> obtenerHorariosOcupados(DateTime fechaSeleccionada) async {
+  Future<List<TimeOfDay?>> obtenerHorariosOcupados(
+      String idSede, List<DateTime> horarioDoctor) async {
     try {
-      final inicioDelDia = DateTime(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day, 0, 0, 0);
-      final finDelDia = DateTime(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day, 23, 59, 59);
+      print('Obteniendo horarios ocupados con el horario $horarioDoctor');
+      final inicioDelDia = horarioDoctor[0];
+      final finDelDia = horarioDoctor[1];
 
-      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('citas')
-          .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicioDelDia))
+      final QuerySnapshot querySnapshot = await bd
+          .where('idSede', isEqualTo: idSede)
+          .where('fecha',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(inicioDelDia))
           .where('fecha', isLessThanOrEqualTo: Timestamp.fromDate(finDelDia))
           .get();
 
-      List<TimeOfDay> horariosOcupados = querySnapshot.docs.map((doc) {
-        Timestamp timestamp = doc['fecha'];
-        DateTime dateTime = timestamp.toDate();
-        return TimeOfDay(hour: dateTime.hour, minute: dateTime.minute);
-      }).toList();
+      List<TimeOfDay?> horariosOcupados = querySnapshot.docs
+          .map((doc) {
+            if (doc['estado'] == "ELIMINADO POR EL USUARIO") {
+              return null;
+            }
+            Timestamp timestamp = doc['fecha'] as Timestamp;
+            DateTime dateTime = timestamp.toDate();
 
-      return horariosOcupados;
+            if (dateTime.isBefore(DateTime.now())) {
+              return null;
+            }
+            return TimeOfDay(hour: dateTime.hour, minute: dateTime.minute);
+          })
+          .where((hora) => hora != null)
+          .toList();
+
+      return horariosOcupados ?? [];
     } catch (e) {
       debugPrint('Error al obtener horarios ocupados: $e');
       return [];
     }
   }
 
+  Future<bool> verificarCitaAgendada(
+      String dniPaciente, DateTime fechaSeleccionada) async {
+    try {
+      final inicioDelDia = DateTime(fechaSeleccionada.year,
+          fechaSeleccionada.month, fechaSeleccionada.day, 0, 0, 0);
+      final finDelDia = DateTime(fechaSeleccionada.year,
+          fechaSeleccionada.month, fechaSeleccionada.day, 23, 59, 59, 999);
+
+      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('citas')
+          .where('dniPaciente', isEqualTo: dniPaciente)
+          .where('fecha',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(inicioDelDia))
+          .where('fecha', isLessThanOrEqualTo: Timestamp.fromDate(finDelDia))
+          .get();
+
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('Error al verificar cita agendada: $e');
+      return false;
+    }
+  }
+
   Future<String> generarNuevoId(DateTime fecha) async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('citas')
+    QuerySnapshot snapshot = await bd
         .where('fecha',
-        isGreaterThanOrEqualTo: DateTime(fecha.year, fecha.month, fecha.day))
+            isGreaterThanOrEqualTo:
+                DateTime(fecha.year, fecha.month, fecha.day))
         .where('fecha',
-        isLessThanOrEqualTo: DateTime(fecha.year, fecha.month, fecha.day, 23, 59, 59))
+            isLessThanOrEqualTo:
+                DateTime(fecha.year, fecha.month, fecha.day, 23, 59, 59))
         .get();
 
     Set<String> idsExistentes = snapshot.docs.map((doc) => doc.id).toSet();
@@ -96,5 +146,49 @@ class CitaProvider {
     } while (idsExistentes.contains(nuevoId));
 
     return nuevoId;
+  }
+
+  Future<void> checkAppointmentsStatus() async {
+    final now = DateTime.now();
+
+    try {
+      final QuerySnapshot pendienteSnapshot =
+          await bd.where('estado', isEqualTo: 'PENDIENTE').get();
+
+      print("Verificando estado: citas pendientes");
+      for (QueryDocumentSnapshot doc in pendienteSnapshot.docs) {
+        final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        final DateTime fechaCita = (data['fecha'] as Timestamp).toDate();
+
+        if (fechaCita.isAtSameMomentAs(now) ||
+            now.difference(fechaCita).inMinutes <= 15) {
+          await bd.doc(doc.id).update({
+            'estado': 'EN PROCESO',
+          });
+        } else if (now.difference(fechaCita).inMinutes >= 20) {
+          await bd.doc(doc.id).update({
+            'estado': 'FINALIZADO',
+          });
+        }
+      }
+
+      print("Verificando estado: citas en proceso");
+      final QuerySnapshot enProcesoSnapshot =
+          await bd.where('estado', isEqualTo: 'EN PROCESO').get();
+
+      for (QueryDocumentSnapshot doc in enProcesoSnapshot.docs) {
+        final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        final DateTime fechaCita = (data['fecha'] as Timestamp).toDate();
+
+        if (now.difference(fechaCita).inMinutes >= 20) {
+          await bd.doc(doc.id).update({
+            'estado': 'FINALIZADO',
+          });
+        }
+      }
+      print('Estado de citas verificada correctamente');
+    } catch (e) {
+      print('Error al monitorear citas: $e');
+    }
   }
 }

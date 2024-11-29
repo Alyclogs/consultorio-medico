@@ -1,4 +1,4 @@
-import 'package:consultorio_medico/views/components/info_row.dart';
+import 'package:consultorio_medico/views/components/utils.dart';
 import 'package:flutter/material.dart';
 import '../models/sede.dart';
 import 'package:flutter_map/flutter_map.dart';

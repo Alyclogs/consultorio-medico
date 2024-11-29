@@ -9,9 +9,13 @@ import 'package:consultorio_medico/views/components/seleccion_modal.dart';
 import 'package:consultorio_medico/views/components/loading_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../controllers/notifications_controller.dart';
 import '../models/medico.dart';
+import '../models/notificacion.dart';
 import '../models/providers/sede_provider.dart';
 import '../models/sede.dart';
+import 'components/horario_selector.dart';
+import 'components/motivo_selector.dart';
 
 class EditAppointmentScreen extends StatefulWidget {
   final Cita citaSeleccionada;
@@ -40,6 +44,7 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
   }
 
   final currentUser = UsuarioProvider.instance.usuarioActual;
+  final bd = CitaProvider.instance;
   final _dniPaciente = TextEditingController();
   final _nombre = TextEditingController();
   final _edad = TextEditingController();
@@ -51,6 +56,9 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
   final _fechaSeleccionada = TextEditingController();
   final _horaSeleccionada = TextEditingController();
   bool _esMasculino = false;
+  late DateTime _selectedDate;
+  Medico? _medicoSeleccionado;
+  Sede? _sedeSeleccionada;
 
   void _goToNextStep() {
     setState(() {
@@ -67,22 +75,27 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
   }
 
   Future<void> _fillCitaData() async {
-    final user = await UsuarioProvider.instance.getRegistro(widget.citaSeleccionada.dniPaciente);
-    final medico = await MedicoProvider.instance.getRegistro(widget.citaSeleccionada.idMedico);
-    final sede = await SedeProvider.instance.getRegistro(widget.citaSeleccionada.idSede);
+    final user = await UsuarioProvider.instance
+        .getRegistro(widget.citaSeleccionada.dniPaciente);
+    final medico = await MedicoProvider.instance
+        .getRegistro(widget.citaSeleccionada.idMedico);
+    final sede =
+        await SedeProvider.instance.getRegistro(widget.citaSeleccionada.idSede);
     if (user == null || medico == null || sede == null) {
       return;
     }
     setState(() {
       _nombre.text = user.nombre;
       _dniPaciente.text = user.id;
-      _edad.text = '${user.edad}';
+      _edad.text = '${AuthController.calcularEdad(user.fecha_nac)}';
       _esMasculino = user.genero == "Masculino" ? true : false;
       _sede.text = sede.nombre;
       _medico.text = medico.nombre;
       _motivo.text = widget.citaSeleccionada.motivo;
-      _fechaSeleccionada.text = DateFormat('dd-MM-yyyy').format(widget.citaSeleccionada.fecha);
-      _horaSeleccionada.text = DateFormat('HH:mm').format(widget.citaSeleccionada.fecha);
+      _fechaSeleccionada.text =
+          DateFormat('dd-MM-yyyy').format(widget.citaSeleccionada.fecha);
+      _horaSeleccionada.text =
+          DateFormat('HH:mm').format(widget.citaSeleccionada.fecha);
     });
   }
 
@@ -91,7 +104,7 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
       setState(() {
         _nombre.text = currentUser.nombre;
         _dniPaciente.text = currentUser.id;
-        _edad.text = '${currentUser.edad}';
+        _edad.text = '${AuthController.calcularEdad(currentUser.fecha_nac)}';
         _esMasculino = currentUser.genero == "Masculino" ? true : false;
       });
     } else {
@@ -104,25 +117,29 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
   }
 
   Future<void> _validateStep1() async {
-    int estado = 401;
-    loadingScreen(context);
-    estado = await AuthController.validarDNI(
-      _dniPaciente.text,
-      _nombre.text
-    );
-    Navigator.pop(context);
-
-    if (estado == 200) {
+    if (_autofill) {
       _goToNextStep();
-    } else if (estado == 404) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('DNI no encontrado')));
-    } else if (estado == 400) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Los datos ingresados no coinciden con el DNI')));
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error al validar el DNI')));
+      int estado = 401;
+      loadingScreen(context);
+      estado = await AuthController.validarDNI(
+          _dniPaciente.text,
+          _nombre.text,
+          _esMasculino ? 'M' : 'F');
+      Navigator.pop(context);
+
+      if (estado == 200) {
+        _goToNextStep();
+      } else if (estado == 404) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('DNI no encontrado')));
+      } else if (estado == 400) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Los datos ingresados no coinciden con el DNI')));
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error al validar el DNI')));
+      }
     }
   }
 
@@ -161,10 +178,7 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
   }
 
   Future<void> _editarCita() async {
-    final medico = await MedicoProvider.instance.getRegistroFromNombre(_medico.text);
-    final sede = await SedeProvider.instance.getRegistroFromNombre(_sede.text);
-
-    if (medico == null || sede == null) {
+    if (_medicoSeleccionado == null || _sedeSeleccionada == null) {
       return;
     } else {
       CitaProvider bd = CitaProvider.instance;
@@ -173,19 +187,37 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
       final appointment = Cita(
           id: widget.citaSeleccionada.id,
           fecha: fechaHora,
+          dniUsuario: UsuarioProvider.instance.usuarioActual.id,
           nomPaciente: _nombre.text,
           dniPaciente: _dniPaciente.text,
-          idMedico: medico.id,
-          idSede: sede.id,
+          idMedico: _medicoSeleccionado!.id,
+          nomMedico: _medicoSeleccionado!.nombre,
+          idSede: _sedeSeleccionada!.id,
+          nomSede: _sedeSeleccionada!.nombre,
           edadPaciente: int.parse(_edad.text),
-          motivo: _motivo.text,
-          costo: 50.0,
-          estado: "PENDIENTE",);
+          motivo: _motivo.text.isNotEmpty ? _motivo.text : "Consulta general",
+          costo: _medicoSeleccionado!.costoCita,
+          estado: "PENDIENTE");
+
       await bd.updateRegistro(appointment);
+
+      final scheduledTime = fechaHora.subtract(Duration(hours: 1));
+      await NotificationsController.instance.updateNotification(
+          notification: Notificacion(
+              appointment.id.hashCode,
+              appointment.id,
+              appointment.fecha,
+              appointment.dniUsuario,
+              '⏰ Cita en 1 hora',
+              'Tienes una cita con ${appointment.nomMedico} a las ${DateFormat('HH:mm').format(fechaHora)}.',
+              scheduledTime));
+
       Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (context) => BottomNavBar(initialIndex: 1,)));
+              builder: (context) => BottomNavBar(
+                    initialIndex: 1,
+                  )));
     }
   }
 
@@ -365,13 +397,15 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
                         _buildInputField(context, "Selecciona Sede",
                             controller: _sede,
                             validator: false,
-                            enabled: false, onTap: () {
+                            enabled: false, onTap: () async {
                           final modal = SeleccionModal<Sede>(
-                              getRegistros: SedeProvider.instance.getRegistros,
+                              getRegistros:
+                                  SedeProvider.instance.getRegistros(),
                               titulo: "Selecciona una sede");
                           modal.mostrar(context, (seleccionado) {
                             setState(() {
-                              _sede.text = seleccionado;
+                              _sede.text = seleccionado.nombre;
+                              _sedeSeleccionada = seleccionado as Sede;
                             });
                           });
                         }),
@@ -381,24 +415,40 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
                         _buildInputField(context, 'Selecciona Médico',
                             controller: _medico,
                             validator: false,
-                            enabled: false, onTap: () {
+                            enabled: false, onTap: () async {
                           final modal = SeleccionModal<Medico>(
-                              getRegistros:
-                                  MedicoProvider.instance.getRegistros,
+                              getRegistros: MedicoProvider.instance
+                                  .getRegistrosPorSede(_sedeSeleccionada!.id),
                               titulo: "Selecciona un médico");
                           modal.mostrar(context, (seleccionado) {
                             setState(() {
-                              _medico.text = seleccionado;
+                              _medico.text = seleccionado.nombre;
+                              _medicoSeleccionado = seleccionado as Medico;
                             });
                           });
                         }),
                         SizedBox(
                           height: 10,
                         ),
-                        _buildInputField(context, "Motivo de la consulta",
-                            controller: _motivo,
-                            onSaved: (value) => _motivo.text = value!,
-                            multiline: true),
+                        _buildInputField(
+                          context,
+                          "Motivo de la consulta",
+                          controller: _motivo,
+                          onSaved: (value) => _motivo.text = value!,
+                          multiline: true,
+                          caps: TextCapitalization.sentences,
+                          validator: false,
+                          onTap: () {
+                            SelectorMotivoCita().mostrar(
+                              context,
+                              (motivo) {
+                                setState(() {
+                                  _motivo.text = motivo;
+                                });
+                              },
+                            );
+                          },
+                        ),
                         SizedBox(
                           height: 10,
                         ),
@@ -436,21 +486,10 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
                             controller: _horaSeleccionada,
                             validator: false, onTap: () async {
                           loadingScreen(context);
-                          await selectTime(context);
+                          _selectTime(context);
                         }, enabled: false),
                         SizedBox(
-                          height: 42,
-                        ),
-                        Text(
-                          'Costo de la consulta: S/50.0',
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[700],
-                              fontSize: 16),
-                        ),
-                        SizedBox(
-                          height: 10,
+                          height: 20,
                         ),
                       ],
                     ),
@@ -527,6 +566,7 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
       Navigator.pop(context);
       if (selectedDate != null) {
         setState(() {
+          _selectedDate = selectedDate;
           _fechaSeleccionada.text =
               DateFormat('dd-MM-yyyy').format(selectedDate.toLocal());
         });
@@ -534,28 +574,20 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
     });
   }
 
-  Future<void> selectTime(BuildContext context) async {
-    TimeOfDay? selectedTime;
+  void _selectTime(BuildContext context) {
+    final selector = HorarioSelector(
+        fechaSeleccionada: _selectedDate,
+        obtenerHorariosOcupados: bd.obtenerHorariosOcupados,
+        idMedico: _medicoSeleccionado!.id,
+        idPaciente: _dniPaciente.text,
+        idSede: _sedeSeleccionada!.id);
 
-    selectedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay(hour: 18, minute: 0),
-        builder: (BuildContext context, Widget? child) {
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
-            child: child!,
-          );
-        });
     Navigator.pop(context);
-
-    if (selectedTime != null &&
-        selectedTime.hour >= 18 &&
-        selectedTime.hour <= 21) {
-      final String? formattedTime = selectedTime.format(context);
+    selector.mostrar(context, (TimeOfDay seleccionado) {
       setState(() {
-        _horaSeleccionada.text = formattedTime!;
+        _horaSeleccionada.text = seleccionado.format(context);
       });
-    }
+    });
   }
 
   Future<bool> isDayFullyBooked(DateTime date) async {

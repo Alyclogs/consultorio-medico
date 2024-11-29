@@ -1,7 +1,6 @@
 import 'package:consultorio_medico/models/providers/medico_provider.dart';
 import 'package:consultorio_medico/views/medic_details_screen.dart';
 import 'package:flutter/material.dart';
-
 import '../models/medico.dart';
 
 class MedicsScreen extends StatefulWidget {
@@ -15,7 +14,6 @@ class _MedicsScreenState extends State<MedicsScreen>
     with SingleTickerProviderStateMixin {
   final bd = MedicoProvider.instance;
   late List<Medico> medicos = [];
-
   bool isLoading = true;
 
   @override
@@ -24,7 +22,7 @@ class _MedicsScreenState extends State<MedicsScreen>
     _loadMedics();
   }
 
-  Future<void> _loadMedics() async {
+  void _loadMedics() async {
     try {
       medicos = await bd.getRegistros();
       setState(() {
@@ -41,7 +39,9 @@ class _MedicsScreenState extends State<MedicsScreen>
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : medicos.isEmpty
-              ? Center(child: Text("No hay médicos para mostrar"),)
+              ? Center(
+                  child: Text("No hay médicos para mostrar"),
+                )
               : Padding(
                   padding: EdgeInsets.all(32),
                   child: Column(
@@ -78,7 +78,10 @@ class _MedicsScreenState extends State<MedicsScreen>
 
   Widget _buildMedico(Medico medico) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => MedicDetailsScreen(selectedMedic: medico))),
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => MedicDetailsScreen(selectedMedic: medico))),
       child: Card(
         margin: EdgeInsets.symmetric(vertical: 10.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),

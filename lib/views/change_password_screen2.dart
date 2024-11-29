@@ -1,19 +1,19 @@
 import 'package:consultorio_medico/models/providers/usuario_provider.dart';
 import 'package:consultorio_medico/views/components/loading_screen.dart';
+import 'package:consultorio_medico/views/login_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/usuario.dart';
 import 'components/utils.dart';
 
-class ChangePasswordScreen extends StatefulWidget {
+class ChangePasswordScreen2 extends StatefulWidget {
   final Usuario matchedUser;
-  const ChangePasswordScreen({super.key, required this.matchedUser});
+  const ChangePasswordScreen2({super.key, required this.matchedUser});
 
   @override
-  State<StatefulWidget> createState() => _ChangePasswordScreenState();
+  State<StatefulWidget> createState() => _ChangePasswordScreen2State();
 }
 
-class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  final TextEditingController _previousPassController = TextEditingController();
+class _ChangePasswordScreen2State extends State<ChangePasswordScreen2> {
   final TextEditingController _newPassController = TextEditingController();
   final TextEditingController _newPassController2 = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -23,11 +23,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      final prevPass = Usuario.encryptPassword(_previousPassController.text);
-      if (prevPass != widget.matchedUser.contrasena) {
-        showInfoDialog(context, 'Error', "La contraseña actual es incorrecta");
-        return;
-      }
+      final prevPass = widget.matchedUser.contrasena;
       final newPass = _newPassController.text;
       if (newPass != _newPassController2.text) {
         showInfoDialog(context, 'Error', "Las contraseñas no coinciden");
@@ -47,16 +43,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         return;
       }
       setState(() {
-        widget.matchedUser.contrasena = _newPassController.text;
+        widget.matchedUser.contrasena =
+            _newPassController.text;
       });
       loadingScreen(context);
-      await UsuarioProvider.instance.updateRegistro(widget.matchedUser);
+      await UsuarioProvider.instance
+          .updateRegistro(widget.matchedUser);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Contraseña actualizada')),
       );
       if (mounted) {
         Navigator.pop(context);
-        Navigator.pop(context, _newPassController.text);
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => LoginScreen()), (_) => false);
       }
     }
   }
@@ -69,8 +67,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Column(
+        padding: EdgeInsets.all(32),
+        child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
@@ -84,9 +82,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      _buildInputField(context, _previousPassController,
-                          "Ingrese su contraseña actual"),
-                      SizedBox(height: 20),
                       _buildInputField(context, _newPassController,
                           "Ingrese una nueva contraseña",
                           password: true),

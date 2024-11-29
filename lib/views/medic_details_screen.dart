@@ -1,5 +1,5 @@
 import 'package:consultorio_medico/models/medico.dart';
-import 'package:consultorio_medico/views/components/info_row.dart';
+import 'package:consultorio_medico/views/components/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/link.dart';
 
@@ -41,6 +41,8 @@ class MedicDetailsScreen extends StatelessWidget {
           ),
           SizedBox(height: 36,),
           buildInfoRow("Especialidad: ", selectedMedic.titulo),
+          SizedBox(height: 15,),
+          buildInfoRow("Ubicación: ", selectedMedic.idSede),
           SizedBox(height: 15,),
           buildInfoRow("Descripción: ", selectedMedic.descripcion),
           SizedBox(height: 15,),

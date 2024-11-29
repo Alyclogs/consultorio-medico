@@ -1,28 +1,44 @@
+import 'package:consultorio_medico/controllers/net_controller.dart';
 import 'package:consultorio_medico/views/appointments_screen.dart';
 import 'package:consultorio_medico/views/home_screen.dart';
 import 'package:consultorio_medico/views/medics_screen.dart';
 import 'package:consultorio_medico/views/profile_screen.dart';
+import 'package:consultorio_medico/views/splash_screen.dart';
 import 'package:flutter/material.dart';
-
+import '../notifications_screen.dart';
 import '../sedes_screen.dart';
 
 class BottomNavBar extends StatefulWidget {
   final int initialIndex;
-
   const BottomNavBar({super.key, this.initialIndex = 0});
 
   @override
-  _BottomNavBarState createState() => _BottomNavBarState();
+  State<BottomNavBar> createState() => _BottomNavBarState();
 }
 
 class _BottomNavBarState extends State<BottomNavBar>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late int currentPage = 0;
+  final netController = NetworkController();
 
   @override
   void initState() {
     super.initState();
+    netController.checkInternetConnection(
+        onInternetConnected: _onInternetConnected,
+        onInternetDisconnected: _onInternetDisconnected);
+    _initTabController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _tabController.dispose();
+    netController.listener.cancel();
+  }
+
+  void _initTabController() {
     _tabController = TabController(length: 5, vsync: this);
     _tabController.index = widget.initialIndex;
     _tabController.animation!.addListener(
@@ -35,16 +51,28 @@ class _BottomNavBarState extends State<BottomNavBar>
     );
   }
 
+  void _onInternetConnected() {
+    setState(() {});
+  }
+
+  void _onInternetDisconnected() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => SplashScreen(action: 'checkInternet')));
+  }
+
   void changePage(int newPage) {
     setState(() {
       currentPage = newPage;
     });
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  Widget _noConnectionMessage() {
+    return Padding(padding: EdgeInsets.all(32),
+    child: Center(
+        child: Text(
+            "Parece que no tienes conexión a internet. Verifica tu conexión y vuelve a intentarlo")));
   }
 
   @override
@@ -61,7 +89,7 @@ class _BottomNavBarState extends State<BottomNavBar>
             padding: EdgeInsets.only(right: 30),
             child: IconButton(
               icon: Icon(Icons.notifications),
-              onPressed: () {},
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => NotificationsScreen())),
             ),
           ),
         ],
@@ -73,11 +101,21 @@ class _BottomNavBarState extends State<BottomNavBar>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  HomeScreen(),
-                  AppointmentsScreen(),
-                  MedicsScreen(),
-                  SedesScreen(),
-                  ProfileScreen(),
+                  !netController.hasInternet
+                      ? _noConnectionMessage()
+                      : HomeScreen(),
+                  !netController.hasInternet
+                      ? _noConnectionMessage()
+                      : AppointmentsScreen(),
+                  !netController.hasInternet
+                      ? _noConnectionMessage()
+                      : MedicsScreen(),
+                  !netController.hasInternet
+                      ? _noConnectionMessage()
+                      : SedesScreen(),
+                  !netController.hasInternet
+                      ? _noConnectionMessage()
+                      : ProfileScreen(),
                 ],
               ),
             ),

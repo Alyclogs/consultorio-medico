@@ -1,3 +1,4 @@
+import 'package:consultorio_medico/controllers/net_controller.dart';
 import 'package:consultorio_medico/models/providers/sede_provider.dart';
 import 'package:consultorio_medico/views/sede_details_screen.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,6 @@ class _SedesScreenState extends State<SedesScreen>
     with SingleTickerProviderStateMixin {
   final bd = SedeProvider.instance;
   late List<Sede> sedes = [];
-
   bool isLoading = true;
 
   @override
@@ -24,7 +24,7 @@ class _SedesScreenState extends State<SedesScreen>
     _loadSedes();
   }
 
-  Future<void> _loadSedes() async {
+  void _loadSedes() async {
     try {
       sedes = await bd.getRegistros();
       setState(() {
@@ -41,38 +41,41 @@ class _SedesScreenState extends State<SedesScreen>
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : sedes.isEmpty
-          ? Center(
-        child: Text("No hay sedes para mostrar"),
-      )
-          : Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Sedes",
-                style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold)),
-            SizedBox(height: 24),
-            Expanded(
-              child: ListView.builder(
-                itemCount: sedes.length,
-                itemBuilder: (context, index) {
-                  return _buildSede(sedes[index]);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+              ? Center(
+                  child: Text("No hay sedes para mostrar"),
+                )
+              : Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Sedes",
+                          style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                      SizedBox(height: 24),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: sedes.length,
+                          itemBuilder: (context, index) {
+                            return _buildSede(sedes[index]);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
     );
   }
 
   Widget _buildSede(Sede sede) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SedeDetailsScreen(selectedSede: sede))),
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => SedeDetailsScreen(selectedSede: sede))),
       child: Card(
         margin: EdgeInsets.symmetric(vertical: 10.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -102,9 +105,9 @@ class _SedesScreenState extends State<SedesScreen>
                         color: Color(0xff0c4454),
                       )),
                   SizedBox(height: 20),
-                    Text(sede.direccion,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11)),
+                  Text(sede.direccion,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 11)),
                 ],
               ),
             ],

@@ -1,16 +1,79 @@
+import 'package:consultorio_medico/controllers/notifications_controller.dart';
+import 'package:consultorio_medico/controllers/permission_handler.dart';
+import 'package:consultorio_medico/models/providers/cita_provider.dart';
+import 'package:consultorio_medico/models/providers/notificacion_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:workmanager/workmanager.dart';
 import 'firebase_options.dart';
 import 'views/splash_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+@pragma('vm:entry-point')
+void callbackDispatcher() {
+  Workmanager().executeTask((task, inputData) async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      await CitaProvider.instance.checkAppointmentsStatus();
+      return Future.value(true);
+    } catch (e) {
+      print("Error en la tarea de Workmanager: $e");
+      return Future.value(false);
+    }
+  });
+  Workmanager().executeTask((task, inputData) async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      await NotificationProvider.instance.removeOldNotifications();
+      return Future.value(true);
+    } catch (e) {
+      print("Error en la tarea de Workmanager: $e");
+      return Future.value(false);
+    }
+  });
+}
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
+  var notifyPrefs = await Permission.notification.isGranted;
+  if (!notifyPrefs) notifyPrefs = await requestNotificationPermissions();
+  if (notifyPrefs) {
+    NotificationsController.instance.isNotificationPermsGranted = true;
+    await NotificationsController.instance.initializeNotifications();
+  }
+
+  final prefs = await SharedPreferences.getInstance();
+  final workmanagerInitialized = prefs.getBool('wm_initialized');
+
+  if (workmanagerInitialized != null && !workmanagerInitialized) {
+  await Workmanager().cancelAll();
+  await Workmanager().initialize(
+    callbackDispatcher,
+    isInDebugMode: false,
+  );
+  await Workmanager().registerPeriodicTask(
+      'checkAppointments', 'checkAppointmentsStatus',
+      frequency: const Duration(minutes: 15));
+  await Workmanager().registerPeriodicTask(
+      'removeNotifications', 'removeOldNotifications',
+      frequency: const Duration(days: 7));
+
+    await prefs.setBool('wm_initialized', true);
+  }
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-  ).then((value) => runApp(const MedicArtApp()));
+  );
+  runApp(const MedicArtApp());
 }
 
 class MedicArtApp extends StatelessWidget {
@@ -20,6 +83,7 @@ class MedicArtApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
       supportedLocales: [const Locale('es', 'PE')],
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
@@ -57,13 +121,6 @@ class MedicArtApp extends StatelessWidget {
               color: Colors.grey[600],
               fontSize: 10),
         ),
-        timePickerTheme: TimePickerThemeData(
-          backgroundColor: Colors.white,
-          timeSelectorSeparatorColor: WidgetStatePropertyAll(Color(0xFF5494a3)),
-          dialTextColor: Colors.grey[700],
-          dialBackgroundColor: Color(0xffe0ecec),
-          dialTextStyle: TextStyle(backgroundColor: Colors.transparent, fontSize: 16, fontWeight: FontWeight.bold)
-        ),
         datePickerTheme: DatePickerThemeData(
           backgroundColor: Colors.white,
           headerBackgroundColor: Color(0xFF5494a3),
@@ -75,7 +132,8 @@ class MedicArtApp extends StatelessWidget {
             overlayColor: Color(0xFF5494a3),
           ),
           //yearForegroundColor: WidgetStatePropertyAll(Colors.grey[600]),
-          yearStyle: TextStyle(fontWeight: FontWeight.normal, color: Colors.grey[600]),
+          yearStyle:
+              TextStyle(fontWeight: FontWeight.normal, color: Colors.grey[600]),
           dayStyle: TextStyle(fontFamily: 'Poppins', color: Colors.grey[600]),
           weekdayStyle: TextStyle(
               fontFamily: 'Poppins',
@@ -84,7 +142,7 @@ class MedicArtApp extends StatelessWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: SplashScreen(),
+      home: SplashScreen(action: 'login'),
       showSemanticsDebugger: false,
     );
   }

@@ -1,22 +1,39 @@
+import 'package:consultorio_medico/models/providers/cita_provider.dart';
+import 'package:consultorio_medico/models/providers/medico_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:wheel_picker/wheel_picker.dart';
 
 class HorarioSelector {
   final DateTime fechaSeleccionada;
-  final Future<List<TimeOfDay>> Function(DateTime fecha)
-      obtenerHorariosOcupados;
+  final String idMedico;
+  final String idSede;
+  final String idPaciente;
+  final Future<List<TimeOfDay?>> Function(
+      String idSede, List<DateTime> horarioDoctor) obtenerHorariosOcupados;
 
   HorarioSelector({
     required this.fechaSeleccionada,
+    required this.idMedico,
+    required this.idSede,
+    required this.idPaciente,
     required this.obtenerHorariosOcupados,
   });
 
   Future<void> mostrar(
       BuildContext context, Function(TimeOfDay) onSeleccionado) async {
-    late List<TimeOfDay> horariosDisponibles = [];
+    final isAlreadyBooked = await CitaProvider.instance
+        .verificarCitaAgendada(idPaciente, fechaSeleccionada);
+    final horarioDoctor = await MedicoProvider.instance
+        .getHorarioActual(idMedico, fechaSeleccionada);
+    final horariosOcupados =
+        await obtenerHorariosOcupados(idSede, horarioDoctor!);
+    final horariosDisponibles =
+        await _generarHorariosDisponibles(horarioDoctor, horariosOcupados);
+
     const textStyle = TextStyle(fontSize: 40.0, height: 1.5);
     final wheelStyle = WheelPickerStyle(
-      itemExtent: textStyle.fontSize! * textStyle.height!, // Text height
+      itemExtent: textStyle.fontSize! * textStyle.height!,
+      // Text height
       squeeze: 1.25,
       diameterRatio: .8,
       surroundingOpacity: .25,
@@ -28,122 +45,167 @@ class HorarioSelector {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (BuildContext context) {
-        return FutureBuilder<List<TimeOfDay>>(
-          future: obtenerHorariosOcupados(fechaSeleccionada),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final horariosDisponibles =
-                _generarHorariosDisponibles(snapshot.data!);
-            late TimeOfDay selected;
-
-            return Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Horarios disponibles',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 200.0,
-                    child: Stack(
-                      fit: StackFit.expand,
+      builder: (context) {
+        late String selected = horariosDisponibles[0];
+        return Padding(
+          padding: EdgeInsets.all(20),
+          child: horariosDisponibles.isEmpty
+              ? Text(
+                  'No hay horarios disponibles. Por favor, elija otra fecha o médico')
+              : isAlreadyBooked
+                  ? Text(
+                      'Ya se ha agendado una cita con el paciente en la fecha seleccionada')
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Align(
-                          alignment: Alignment(0, -0.3),
-                          child: Container(
-                            height: 42.0,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFC3C9FA).withAlpha(26),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
+                        const Text(
+                          'Horarios disponibles',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          height: 200.0,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Align(
+                                alignment: Alignment(0, -0.3),
+                                child: Container(
+                                  height: 42.0,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        const Color(0xFFC3C9FA).withAlpha(26),
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10.0),
+                                child: WheelPicker(
+                                  itemCount: horariosDisponibles.length,
+                                  builder: (context, index) {
+                                    final horario = horariosDisponibles[index];
+                                    return Text(
+                                      horario,
+                                      style: const TextStyle(fontSize: 16),
+                                    );
+                                  },
+                                  style: wheelStyle,
+                                  selectedIndexColor:
+                                      Theme.of(context).primaryColor,
+                                  looping: false,
+                                  onIndexChanged: (index) {
+                                    selected = horariosDisponibles[index];
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                          child: WheelPicker(
-                            itemCount: horariosDisponibles.length,
-                            builder: (context, index) {
-                              final horario = horariosDisponibles[index];
-                              return Text(
-                                horario.format(context),
-                                style: const TextStyle(fontSize: 16),
-                              );
-                            },
-                            style: wheelStyle,
-                            selectedIndexColor: Theme.of(context).primaryColor,
-                            looping: false,
-                            onIndexChanged: (index) {
-                              selected = horariosDisponibles[index];
-                            },
-                          ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  backgroundColor: const Color(0xFF5494a3),
+                                ),
+                                onPressed: () {
+                                  onSeleccionado(_stringToTime(selected));
+                                  Navigator.pop(context);
+                                },
+                                child: const Text(
+                                  "Seleccionar",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            )
+                          ],
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: const Color(0xFF5494a3),
-                          ),
-                          onPressed: () {
-                            onSeleccionado(selected);
-                            Navigator.pop(context);
-                          },
-                          child: const Text(
-                            "Seleccionar",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
         );
       },
     );
   }
 
-  List<TimeOfDay> _generarHorariosDisponibles(
-      List<TimeOfDay> horariosOcupados) {
-    const inicio = TimeOfDay(hour: 18, minute: 0);
-    const fin = TimeOfDay(hour: 21, minute: 0);
+  Future<List<String>> _generarHorariosDisponibles(
+      List<DateTime> horarioDoctor, List<TimeOfDay?> horariosOcupados) async {
+    DateTime horaActual = DateTime(
+        fechaSeleccionada.year,
+        fechaSeleccionada.month,
+        fechaSeleccionada.day,
+        DateTime.now().hour,
+        DateTime.now().minute);
 
-    List<TimeOfDay> horarios = [];
-    TimeOfDay actual = inicio;
+    DateTime horaInicio = horarioDoctor.first;
+    DateTime horaFin = horarioDoctor.last;
 
-    while (_compararHoras(actual, fin) <= 0) {
-      if (!horariosOcupados
-          .any((ocupado) => _compararHoras(actual, ocupado) == 0)) {
-        horarios.add(actual);
+    List<DateTime> horariosCompletos = [];
+    List<String> horariosDisponibles = [];
+
+    if (_esElMismoDia(horaActual, DateTime.now())) {
+      if (horaActual.hour >= horaFin.hour &&
+          horaActual.minute >= horaFin.minute) {
+        return [];
       }
-      actual = _sumarMinutos(actual, 15);
+
+      _generarHorariosDesde(horaActual, horaInicio, horaFin, horariosCompletos);
+      horariosCompletos.removeWhere(
+          (horario) => horario.difference(horaActual).inMinutes < 60);
+    } else {
+      horaActual = DateTime(horaActual.year, horaActual.month, horaActual.day,
+          horaInicio.hour - 1, 0);
+      _generarHorariosDesde(horaActual, horaInicio, horaFin, horariosCompletos);
     }
+    horariosCompletos.forEach((horario) {
+      horariosDisponibles
+          .add('${horario.hour}:${horario.minute.toString().padLeft(2, '0')}');
+    });
+    horariosDisponibles.removeWhere(
+        (horario) => _timeListToString(horariosOcupados).contains(horario));
 
-    return horarios;
+    return horariosDisponibles;
   }
+}
 
-  int _compararHoras(TimeOfDay a, TimeOfDay b) {
-    return a.hour == b.hour ? a.minute - b.minute : a.hour - b.hour;
+List<String> _timeListToString(List<TimeOfDay?> timeList) {
+  List<String> stringList = [];
+  for (var time in timeList) {
+    if (time != null) {
+      stringList.add(_timeToString(time));
+    }
   }
+  return stringList;
+}
 
-  TimeOfDay _sumarMinutos(TimeOfDay hora, int minutos) {
-    int totalMinutes = hora.hour * 60 + hora.minute + minutos;
-    int newHour = totalMinutes ~/ 60;
-    int newMinute = totalMinutes % 60;
-    return TimeOfDay(hour: newHour, minute: newMinute);
+String _timeToString(TimeOfDay time) {
+  return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+}
+
+TimeOfDay _stringToTime(String time) {
+  return TimeOfDay(
+      hour: int.parse(time.split(":")[0]),
+      minute: int.parse(time.split(":")[1]));
+}
+
+bool _esElMismoDia(DateTime one, DateTime other) {
+  return one.year == other.year &&
+      one.month == other.month &&
+      one.day == other.day;
+}
+
+void _generarHorariosDesde(DateTime horaActual, DateTime horaInicio,
+    DateTime horaFin, List<DateTime> horariosDisponibles) {
+  DateTime hora = horaInicio;
+
+  while (hora.difference(horaFin) < Duration(minutes: 20)) {
+    horariosDisponibles.add(DateTime(horaActual.year, horaActual.month,
+        horaActual.day, hora.hour, hora.minute));
+    hora = hora.add(Duration(minutes: 20));
   }
 }

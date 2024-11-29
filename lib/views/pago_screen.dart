@@ -69,7 +69,7 @@ class PaymentWebViewState extends State<PaymentWebView> {
   }
 
   Future<String?> _getConfig() async {
-    var url = Uri.parse('https://7p85gpqf-3000.brs.devtunnels.ms/url');
+    var url = Uri.parse('http://34.44.170.46:3000/url');
     String amountInteger = '${(widget.appointment.costo * 100).toInt()}';
 
     var body = {

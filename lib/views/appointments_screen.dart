@@ -1,18 +1,17 @@
 import 'package:consultorio_medico/controllers/date_formatter.dart';
-import 'package:consultorio_medico/models/medico.dart';
 import 'package:consultorio_medico/models/providers/cita_provider.dart';
-import 'package:consultorio_medico/models/providers/medico_provider.dart';
-import 'package:consultorio_medico/models/providers/sede_provider.dart';
 import 'package:consultorio_medico/models/providers/usuario_provider.dart';
 import 'package:consultorio_medico/models/usuario.dart';
 import 'package:consultorio_medico/views/components/loading_screen.dart';
+import 'package:consultorio_medico/views/components/utils.dart';
 import 'package:consultorio_medico/views/edit_appointment_screen.dart';
 import 'package:consultorio_medico/views/new_appointment_screen.dart';
+import 'package:consultorio_medico/views/resultado_cita_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../controllers/notifications_controller.dart';
 import '../models/cita.dart';
-
 import '../models/pago.dart';
-import '../models/sede.dart';
 import 'appointment_details_screen.dart';
 
 class AppointmentsScreen extends StatefulWidget {
@@ -72,6 +71,16 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 await _loadCitas();
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
+
+                cita.estado = "ELIMINADO POR EL USUARIO";
+                await CitaProvider.instance.updateRegistro(cita);
+                showInfoDialog(
+                    context,
+                    """Se ha eliminado la cita, para consultar el estado de tu reembolso, por favor envía un mensaje al siguiente correo con el código ${cita.id}
+                    """,
+                    'correo',
+                    onClickLink: () async => await launchUrl(
+                        Uri.parse('mailto: aquirozag@ucvvirtual.edu.pe')));
               },
               child: Text('Aceptar'),
             ),
@@ -106,7 +115,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                       : _listaCitas(context, citasPendientes),
                   isLoading
                       ? Center(child: CircularProgressIndicator())
-                      : _listaCitas(context, citasFinalizadas),
+                      : _listaCitas(context, citasFinalizadas)
                 ],
               ),
             ),
@@ -151,17 +160,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 ))
           else
             Center(child: Text("No hay citas para mostrar")),
-          SizedBox(height: 62),
         ],
       ),
     );
   }
 
   Future<Widget> _buildCita(Cita cita) async {
-    final Medico? medico =
-        await MedicoProvider.instance.getRegistro(cita.idMedico);
-    final Sede? sede = await SedeProvider.instance.getRegistro(cita.idSede);
-    final Pago? pago = await CitaProvider.instance.getPago(cita.id);
+    final Pago pago = await CitaProvider.instance.getPago(cita.id);
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -169,8 +174,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           MaterialPageRoute(
               builder: (context) => AppointmentDetailsScreen(
                     cita: cita,
-                    nombreMedico: medico?.nombre ?? "Médico",
-                    nombreSede: sede?.nombre ?? "Sede",
                     pago: pago,
                   ))),
       child: Card(
@@ -199,14 +202,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(medico != null ? medico.nombre : "Médico",
+                        Text(cita.nomMedico,
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                                 color: Color(0xff0c4454))),
                         SizedBox(height: 10),
-                        Text(sede != null ? sede.nombre : "Sede",
-                            style: TextStyle(fontSize: 11)),
+                        Text(cita.nomSede, style: TextStyle(fontSize: 11)),
                         SizedBox(height: 20),
                         Text(cita.motivo, style: TextStyle(fontSize: 13)),
                       ],
@@ -254,12 +256,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
               SizedBox(
                 height: 16,
               ),
-              if (cita.estado != "FINALIZADO")
+              if (cita.estado != "FINALIZADO" &&
+                  cita.estado != "EN PROCESO" &&
+                  cita.estado != "ELIMINADO POR EL USUARIO")
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                        UsuarioProvider.instance.usuarioActual.sendNotifications
+                        NotificationsController
+                                .instance.isNotificationPermsGranted
                             ? "Alerta activada"
                             : "Alerta desactivada",
                         style: TextStyle(fontSize: 11)),
@@ -275,13 +280,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                         style: TextStyle(fontSize: 11)),
                   ],
                 ),
-              /*
               if (cita.estado == "FINALIZADO")
                 Container(
                   width: double.infinity,
                   margin: EdgeInsets.only(top: 6),
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                ResultadoCitaScreen(citaSeleccionada: cita))),
                     style: OutlinedButton.styleFrom(
                       padding: EdgeInsets.all(12),
                       side: BorderSide(width: 1, color: Color(0xFF5494a3)),
@@ -306,7 +313,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                     ),
                   ),
                 ),
-               */
             ],
           ),
         ),

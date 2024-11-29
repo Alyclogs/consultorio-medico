@@ -1,9 +1,13 @@
 import 'package:consultorio_medico/views/components/bottom_navbar.dart';
 import 'package:consultorio_medico/views/components/loading_screen.dart';
+import 'package:consultorio_medico/views/forgot_password_screen.dart';
 import 'package:consultorio_medico/views/register_screen.dart';
+import 'package:consultorio_medico/views/splash_screen.dart';
 import 'package:flutter/material.dart';
+import '../controllers/net_controller.dart';
 import '../models/providers/usuario_provider.dart';
 import '../models/usuario.dart';
+import 'components/utils.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +22,30 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passController = TextEditingController();
   final bd = UsuarioProvider.instance;
   late bool _passVisible = false;
+  final netController = NetworkController();
+
+  @override
+  void initState() {
+    super.initState();
+    netController.checkInternetConnection(onInternetConnected: _onInternetConnected, onInternetDisconnected: _onInternetDisconnected);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    netController.listener.cancel();
+  }
+
+  void _onInternetConnected() {
+    setState(() {});
+  }
+
+  void _onInternetDisconnected() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => SplashScreen(action: 'checkInternet')));
+  }
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
@@ -28,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
       bool existe = false;
 
       loadingScreen(context);
-      existe = await bd.validarUsuario(dni, pass);
+      existe = await bd.validarUsuario(dni, Usuario.encryptPassword(pass));
       if (existe) {
         Usuario? usuario;
         usuario = await bd.getRegistro(dni);
@@ -38,37 +66,21 @@ class _LoginScreenState extends State<LoginScreen> {
             bd.usuarioActual = usuario!;
           });
           await UsuarioProvider.instance.guardarSesion(dni);
-          print("Sesion guardada " + dni);
-          Navigator.pop(context);
+          if (mounted) {
+            Navigator.pop(context);
 
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => BottomNavBar()));
-          return;
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => BottomNavBar()));
+            return;
+          }
         }
       }
-      Navigator.pop(context);
-      _showErrorDialog();
+      if (mounted) {
+        Navigator.pop(context);
+        showInfoDialog(context, "Error", "Usuario o contraseña incorrectos");
+      }
     }
-  }
-
-  void _showErrorDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Error'),
-          content: Text('Usuario o contraseña incorrectos.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Aceptar'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -162,6 +174,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               return null;
                             },
                           ),
+                          SizedBox(height: 15,),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ForgotPasswordScreen()));
+                        },
+                        child: Text('¿Olvidaste tu contraseña?',
+                            style: TextStyle(
+                                color: Color(0xFF5494a3),
+                                fontSize: 14,
+                                decoration: TextDecoration.underline)),),
                           SizedBox(height: 36),
                           SizedBox(
                             width: double.infinity,

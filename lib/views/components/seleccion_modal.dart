@@ -3,13 +3,13 @@ import '../../models/sede.dart';
 import '../../models/seleccionable.dart';
 
 class SeleccionModal<T extends Seleccionable> {
-  Future<List<T>> Function() getRegistros;
+  Future<List<T>> getRegistros;
   String titulo;
   String seleccionado = '';
 
   SeleccionModal({required this.getRegistros, required this.titulo});
 
-  void mostrar(BuildContext context, Function(String) onSeleccionado) {
+  void mostrar(BuildContext context, Function(Seleccionable) onSeleccionado) {
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
@@ -17,13 +17,13 @@ class SeleccionModal<T extends Seleccionable> {
       ),
       builder: (BuildContext context) {
         return FutureBuilder<List<Seleccionable>>(
-          future: getRegistros(),
+          future: getRegistros,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
             }
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(child: Text('No hay datos disponibles'));
+              return Center(child: Text('No hay datos disponibles.'));
             }
             return Padding(
               padding: const EdgeInsets.all(20.0),
@@ -65,7 +65,7 @@ class SeleccionModal<T extends Seleccionable> {
                                 ? Text(item.direccion)
                                 : Text(item.titulo),
                             onTap: () {
-                              onSeleccionado(item.nombre);
+                              onSeleccionado(item);
                               Navigator.pop(context);
                             },
                           ),
