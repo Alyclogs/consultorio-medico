@@ -9,11 +9,14 @@ import 'package:consultorio_medico/models/usuario.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../controllers/notifications_controller.dart';
+import '../models/notificacion.dart';
 import 'error_page.dart';
 
 class PaymentWebView extends StatefulWidget {
-  const PaymentWebView({super.key, required this.appointment});
+  const PaymentWebView({super.key, required this.appointment, required this.notification});
   final Cita appointment;
+  final Notificacion notification;
 
   @override
   PaymentWebViewState createState() => PaymentWebViewState();
@@ -61,14 +64,14 @@ class PaymentWebViewState extends State<PaymentWebView> {
   }
 
   void _loadConfig() async {
-    String? finalUrl = await _getConfig();
+    String? finalUrl = await _getRedirectionUrl();
 
     setState(() {
       _finalUrl = finalUrl!;
     });
   }
 
-  Future<String?> _getConfig() async {
+  Future<String?> _getRedirectionUrl() async {
     var url = Uri.parse('https://7p85gpqf-3000.brs.devtunnels.ms/url');
     String amountInteger = '${(widget.appointment.costo * 100).toInt()}';
 
@@ -92,6 +95,27 @@ class PaymentWebViewState extends State<PaymentWebView> {
     var data = jsonDecode(response.body);
     String responseString = data['redirectionUrl'].toString();
     return responseString;
+  }
+
+  Future<void> _goToSuccessPage() async {
+    await CitaProvider.instance
+        .addRegistro(widget.appointment);
+    final pago = await CitaProvider.instance
+        .getPago(widget.appointment.id);
+
+    if (DateTime.now().difference(widget.appointment.fecha) > Duration(minutes: 60)) {
+      await NotificationsController.instance.scheduleNotification(
+          notification: widget.notification);
+    } else {
+      await NotificationsController.instance.sendNotification(
+          widget.notification);
+    }
+
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+            builder: (context) => SuccessPage(pago: pago)),
+            (_) => false);
   }
 
   @override
@@ -125,15 +149,7 @@ class PaymentWebViewState extends State<PaymentWebView> {
                       (controller, navigationAction) async {
                     var uri = navigationAction.request.url!;
                     if (uri.toString().contains('success')) {
-                      await CitaProvider.instance
-                          .addRegistro(widget.appointment);
-                      final pago = await CitaProvider.instance
-                          .getPago(widget.appointment.id);
-                      Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => SuccessPage(pago: pago)),
-                          (_) => false);
+                      await _goToSuccessPage();
                       return NavigationActionPolicy.CANCEL;
                     }
                     if (uri.toString().toLowerCase().endsWith('pdf')) {
