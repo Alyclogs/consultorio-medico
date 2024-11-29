@@ -169,18 +169,10 @@ class NewAppointmentScreenState extends State<NewAppointmentScreen> {
           'Tienes una cita con ${appointment.nomMedico} a las ${DateFormat('HH:mm').format(fechaHora)}.',
           scheduledTime);
 
-      if (DateTime.now().difference(fechaHora) > Duration(minutes: 60)) {
-        await NotificationsController.instance.scheduleNotification(
-            notification: notification);
-      } else {
-        await NotificationsController.instance.sendNotification(
-            notification);
-      }
-
       Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => PaymentWebView(appointment: appointment)));
+              builder: (context) => PaymentWebView(appointment: appointment, notification: notification,)));
     }
   }
 
