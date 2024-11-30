@@ -47,26 +47,23 @@ void main() async {
   await dotenv.load();
   var notifyPrefs = await Permission.notification.isGranted;
   if (!notifyPrefs) notifyPrefs = await requestNotificationPermissions();
-  if (notifyPrefs) {
-    NotificationsController.instance.isNotificationPermsGranted = true;
-    await NotificationsController.instance.initializeNotifications();
-  }
+  NotificationsController.instance.isNotificationPermsGranted = true;
+  await NotificationsController.instance.initializeNotifications();
 
   final prefs = await SharedPreferences.getInstance();
   final workmanagerInitialized = prefs.getBool('wm_initialized');
 
   if (workmanagerInitialized != null && !workmanagerInitialized) {
-  await Workmanager().cancelAll();
-  await Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: false,
-  );
-  await Workmanager().registerPeriodicTask(
-      'checkAppointments', 'checkAppointmentsStatus',
-      frequency: const Duration(minutes: 15));
-  await Workmanager().registerPeriodicTask(
-      'removeNotifications', 'removeOldNotifications',
-      frequency: const Duration(days: 7));
+    await Workmanager().initialize(
+      callbackDispatcher,
+      isInDebugMode: false,
+    );
+    await Workmanager().registerPeriodicTask(
+        'checkAppointments', 'checkAppointmentsStatus',
+        frequency: const Duration(minutes: 15));
+    await Workmanager().registerPeriodicTask(
+        'removeNotifications', 'removeOldNotifications',
+        frequency: const Duration(days: 7));
 
     await prefs.setBool('wm_initialized', true);
   }

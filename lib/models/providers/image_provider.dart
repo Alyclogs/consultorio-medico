@@ -19,7 +19,7 @@ class CloudinaryProvider {
         file: file.path,
         fileBytes: file.readAsBytesSync(),
         resourceType: CloudinaryResourceType.image,
-        folder: folder,
+        folder: 'consultorio/$folder',
         fileName: fileName,
         progressCallback: (count, total) {
           print('Uploading image from file with progress: $count/$total');

@@ -15,8 +15,7 @@ import '../models/notificacion.dart';
 import 'error_page.dart';
 
 class PaymentWebView extends StatefulWidget {
-  const PaymentWebView(
-      {super.key, required this.appointment});
+  const PaymentWebView({super.key, required this.appointment});
   final Cita appointment;
 
   @override
@@ -108,17 +107,16 @@ class PaymentWebViewState extends State<PaymentWebView> {
         cita.fecha,
         cita.dniUsuario,
         '⏰ Cita en 1 hora',
-        'Tienes una cita con ${cita.nomMedico} a las ${DateFormat('hh:mm a').format(cita.fecha)}.');
+        'Tienes una cita con ${cita.nomMedico} a las ${DateFormat('hh:mm a').format(cita.fecha)}.',
+        false);
 
-    if (cita.fecha.difference(DateTime.now()) >
-        Duration(minutes: 60)) {
+    if (cita.fecha.difference(DateTime.now()) > Duration(minutes: 60)) {
       notification.timestamp = scheduledTime;
       await NotificationsController.instance
           .scheduleNotification(notification: notification);
     } else {
       notification.timestamp = DateTime.now();
-      await NotificationsController.instance
-          .sendNotification(notification);
+      await NotificationsController.instance.sendNotification(notification);
     }
 
     Navigator.pushAndRemoveUntil(

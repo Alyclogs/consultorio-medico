@@ -7,13 +7,14 @@ class Notificacion {
   String usuarioId;
   String title;
   String body;
+  bool seen;
   DateTime? timestamp;
 
-  Notificacion(this.id, this.citaId, this.fechaCita, this.usuarioId, this.title, this.body);
+  Notificacion(this.id, this.citaId, this.fechaCita, this.usuarioId, this.title, this.body, this.seen);
 
   factory Notificacion.fromJson(Map<String, dynamic> data, int id) {
     final notification = Notificacion(id, data["citaId"] as String, (data["fechaCita"] as Timestamp).toDate(), data['usuarioId'] as String, data["title"] as String,
-        data["body"] as String);
+        data["body"] as String, data["seen"] as bool);
     if (data["timestamp"] != null) {
       notification.timestamp = (data["timestamp"] as Timestamp).toDate();
     }
@@ -27,6 +28,7 @@ class Notificacion {
       "usuarioId": usuarioId,
       "title": title,
       "body": body,
+      "seen": seen,
       "timestamp": timestamp
     };
   }

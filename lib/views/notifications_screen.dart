@@ -27,6 +27,7 @@ class _NotificationScreenState extends State<NotificationsScreen> {
     try {
       List<Notificacion> notifications =
           await bd.getNotifications(UsuarioProvider.instance.usuarioActual.id);
+
       setState(() {
         _notificaciones = notifications;
         isLoading = false;
@@ -69,7 +70,7 @@ class _NotificationScreenState extends State<NotificationsScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20)),
                           elevation: 3,
-                          color: Colors.white,
+                          color: noti.seen ? Colors.white : Color(0xffe0ecec),
                           child: Container(
                             padding: EdgeInsets.all(10),
                             child: ListTile(
@@ -78,7 +79,8 @@ class _NotificationScreenState extends State<NotificationsScreen> {
                                 children: [
                                   Text(
                                     noti.title,
-                                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                                    style: TextStyle(
+                                        fontSize: 16, color: Colors.grey[700]),
                                     textAlign: TextAlign.start,
                                   ),
                                   SizedBox(
@@ -90,15 +92,19 @@ class _NotificationScreenState extends State<NotificationsScreen> {
                                 children: [
                                   Text(
                                     noti.body,
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
                                     textAlign: TextAlign.start,
                                   ),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       Text(
-                                        DateFormat('dd/MM/yyyy hh:mm a').format(noti.timestamp!),
-                                        style: Theme.of(context).textTheme.bodySmall,
+                                        DateFormat('dd/MM/yyyy hh:mm a')
+                                            .format(noti.timestamp!),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
                                         textAlign: TextAlign.end,
                                       ),
                                     ],

@@ -27,11 +27,11 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (validNumber && matchedUser != null) {
       Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => VerifyPhoneScreen(
-                telephoneNumber: _telfController.text,
-            onVerified: () => Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) =>
-                    ChangePasswordScreen2(matchedUser: matchedUser)))
-              )));
+              telephoneNumber: _telfController.text,
+              onVerified: () => Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          ChangePasswordScreen2(matchedUser: matchedUser))))));
     } else {
       showInfoDialog(context, 'Error', 'Los datos son incorrectos');
     }
@@ -109,14 +109,12 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   onPressed: () => showInfoDialog(
                         context,
                         'Ayuda',
-                        'Si cambió de número, por favor, envíenos un mensaje al siguiente ',
-                        linkText: 'correo',
+                        'Si cambió de número, por favor, envíenos un mensaje al siguiente correo ',
+                        linkText: 'aquirozag@ucvvirtual.edu.pe',
                         onClickLink: () async {
-                          final url =
-                              Uri.parse('mailto:aquirozag@ucvvirtual.edu.pe');
-                          if (await canLaunchUrl(url)) {
-                            await launchUrl(url);
-                          }
+                          final url = Uri(
+                              scheme: 'mailto', path: 'aquirozag@ucvvirtual.edu.pe');
+                          await launchUrl(url);
                         },
                       ),
                   child: Text(

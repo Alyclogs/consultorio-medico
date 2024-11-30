@@ -78,9 +78,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                     context,
                     """Se ha eliminado la cita, para consultar el estado de tu reembolso, por favor envía un mensaje al siguiente correo con el código ${cita.id}
                     """,
-                    'correo',
+                    'aquirozag@ucvvirtual.edu.pe',
                     onClickLink: () async => await launchUrl(
-                        Uri.parse('mailto: aquirozag@ucvvirtual.edu.pe')));
+                        Uri(scheme: 'mailto', path: 'aquirozag@ucvvirtual.edu.pe')));
               },
               child: Text('Aceptar'),
             ),

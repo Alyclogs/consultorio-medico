@@ -205,7 +205,8 @@ class EditAppointmentScreenState extends State<EditAppointmentScreen> {
           appointment.fecha,
           appointment.dniUsuario,
           '⏰ Cita en 1 hora',
-          'Tienes una cita con ${appointment.nomMedico} a las ${DateFormat('hh:mm a').format(fechaHora)}.');
+          'Tienes una cita con ${appointment.nomMedico} a las ${DateFormat('hh:mm a').format(fechaHora)}.',
+          false);
 
       if (appointment.fecha.difference(DateTime.now()) >
           Duration(minutes: 60)) {

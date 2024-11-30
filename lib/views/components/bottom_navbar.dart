@@ -1,4 +1,6 @@
 import 'package:consultorio_medico/controllers/net_controller.dart';
+import 'package:consultorio_medico/models/providers/notificacion_provider.dart';
+import 'package:consultorio_medico/models/providers/usuario_provider.dart';
 import 'package:consultorio_medico/views/appointments_screen.dart';
 import 'package:consultorio_medico/views/home_screen.dart';
 import 'package:consultorio_medico/views/medics_screen.dart';
@@ -21,6 +23,7 @@ class _BottomNavBarState extends State<BottomNavBar>
   late TabController _tabController;
   late int currentPage = 0;
   final netController = NetworkController();
+  bool unseenNotifications = false;
 
   @override
   void initState() {
@@ -38,7 +41,7 @@ class _BottomNavBarState extends State<BottomNavBar>
     netController.listener.cancel();
   }
 
-  void _initTabController() {
+  void _initTabController() async {
     _tabController = TabController(length: 5, vsync: this);
     _tabController.index = widget.initialIndex;
     _tabController.animation!.addListener(
@@ -49,6 +52,10 @@ class _BottomNavBarState extends State<BottomNavBar>
         }
       },
     );
+    bool unseen = await getUnseenNotifications();
+    setState(() {
+      unseenNotifications = unseen;
+    });
   }
 
   void _onInternetConnected() {
@@ -69,10 +76,16 @@ class _BottomNavBarState extends State<BottomNavBar>
   }
 
   Widget _noConnectionMessage() {
-    return Padding(padding: EdgeInsets.all(32),
-    child: Center(
-        child: Text(
-            "Parece que no tienes conexión a internet. Verifica tu conexión y vuelve a intentarlo")));
+    return Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(
+            child: Text(
+                "Parece que no tienes conexión a internet. Verifica tu conexión y vuelve a intentarlo")));
+  }
+
+  Future<bool> getUnseenNotifications() async {
+    return NotificationProvider.instance
+        .unseenNotifications(UsuarioProvider.instance.usuarioActual.id);
   }
 
   @override
@@ -88,8 +101,16 @@ class _BottomNavBarState extends State<BottomNavBar>
           Padding(
             padding: EdgeInsets.only(right: 30),
             child: IconButton(
-              icon: Icon(Icons.notifications),
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => NotificationsScreen())),
+              icon: Icon(unseenNotifications
+                  ? Icons.notifications_active
+                  : Icons.notifications),
+              onPressed: () {
+                setState(() {
+                  unseenNotifications = false;
+                });
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => NotificationsScreen()));
+              },
             ),
           ),
         ],

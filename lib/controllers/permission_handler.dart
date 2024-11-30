@@ -1,5 +1,9 @@
 import 'package:permission_handler/permission_handler.dart';
 
+Future<bool> openApplicationSettings() async {
+  return await openAppSettings();
+}
+
 Future<bool> requestSmsPermissions() async {
   if (await Permission.sms.isGranted) {
     print('Permiso de SMS ya concedido');
@@ -11,9 +15,6 @@ Future<bool> requestSmsPermissions() async {
     print('Permiso de SMS concedido');
   } else if (status.isDenied) {
     print('Permiso de SMS denegado');
-  } else if (status.isPermanentlyDenied) {
-    print('Permiso de SMS permanentemente denegado');
-    openAppSettings();
   }
   return status.isGranted;
 }
@@ -28,9 +29,6 @@ Future<bool> requestNotificationPermissions() async {
     print('Permiso de Notificaciones concedido');
   } else if (status.isDenied) {
     print('Permiso de Notificaciones denegado');
-  } else if (status.isPermanentlyDenied) {
-    print('Permiso de Notificaciones permanentemente denegado');
-    openAppSettings();
   }
   return status.isGranted;
 }

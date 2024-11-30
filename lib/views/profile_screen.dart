@@ -57,11 +57,11 @@ class ProfileScreenState extends State<ProfileScreen> {
                           final file = await CloudinaryProvider.instance
                               .pickImage(source);
                           if (file != null) {
+                            loadingScreen(context);
                             final url = await CloudinaryProvider.instance
                                 .uploadImage(
                                     file, 'users_pfps', currentUser.id);
                             if (url != null) {
-                              loadingScreen(context);
                               currentUser.foto = url;
                               await UsuarioProvider.instance
                                   .updateRegistro(currentUser);
@@ -167,31 +167,6 @@ class ProfileScreenState extends State<ProfileScreen> {
                         )
                       ],
                     ),
-                    SizedBox(height: 40),
-                    Text(
-                      "Preferencias",
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.left,
-                    ),
-                    SizedBox(
-                      height: 15,
-                    ),
-                    buildInfoRow("Activar notificación", "",
-                        otherComponent: Switch(
-                          value: NotificationsController
-                              .instance.isNotificationPermsGranted,
-                          activeColor: Theme.of(context).primaryColor,
-                          onChanged: (bool value) async {
-                            loadingScreen(context);
-                            await NotificationsController.instance
-                                .openApplicationSettings();
-                            if (mounted) Navigator.pop(context);
-                          },
-                        )),
                   ],
                 ),
               ),

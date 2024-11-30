@@ -7,24 +7,42 @@ import '../../views/appointment_details_screen.dart';
 import '../cita.dart';
 
 class NotificationProvider {
-
   static final NotificationProvider instance = NotificationProvider._init();
   NotificationProvider._init();
 
   Future<List<Notificacion>> getNotifications(String usuarioId) async {
     try {
-      final docs = await FirebaseFirestore.instance.collection('notifications').where('usuarioId', isEqualTo: usuarioId).get();
-      return docs.docs.map((d) => Notificacion.fromJson(d.data(), int.parse(d.id))).toList();
+      final docs = await FirebaseFirestore.instance
+          .collection('notifications')
+          .where('usuarioId', isEqualTo: usuarioId)
+          .orderBy('seen', descending: true)
+          .orderBy('fecha', descending: true)
+          .get();
 
+      return docs.docs
+          .map((d) => Notificacion.fromJson(d.data(), int.parse(d.id)))
+          .toList();
     } catch (e) {
-      print('Error while getting notifications from database');
+      print('Error while reading notifications from database');
       return [];
+    }
+  }
+
+  Future<bool> unseenNotifications(String usuarioId) async {
+    try {
+      final docs = await getNotifications(usuarioId);
+      return docs.any((n) => !n.seen);
+    } catch (e) {
+      return false;
     }
   }
 
   Future<void> addNotification(Notificacion registro) async {
     try {
-      await FirebaseFirestore.instance.collection('notifications').doc('${registro.id}').set(registro.toJson());
+      await FirebaseFirestore.instance
+          .collection('notifications')
+          .doc('${registro.id}')
+          .set(registro.toJson());
     } catch (e) {
       print("Error adding notification to database: $e");
     }
@@ -32,7 +50,10 @@ class NotificationProvider {
 
   Future<void> updateNotification(Notificacion registro) async {
     try {
-      await FirebaseFirestore.instance.collection('notifications').doc('${registro.id}').update(registro.toJson());
+      await FirebaseFirestore.instance
+          .collection('notifications')
+          .doc('${registro.id}')
+          .update(registro.toJson());
     } catch (e) {
       print("Error updating notification from database: $e");
     }
@@ -40,7 +61,10 @@ class NotificationProvider {
 
   Future<void> deleteNotification(int notificationId) async {
     try {
-      await FirebaseFirestore.instance.collection('notifications').doc('$notificationId').delete();
+      await FirebaseFirestore.instance
+          .collection('notifications')
+          .doc('$notificationId')
+          .delete();
     } catch (e) {
       print("Error updating notification from database: $e");
     }
@@ -79,10 +103,10 @@ class NotificationProvider {
 
         navigatorKey.currentState?.push(
           MaterialPageRoute(
-            builder: (context) =>
-                AppointmentDetailsScreen(
-                  cita: cita, pago: pago,
-                ),
+            builder: (context) => AppointmentDetailsScreen(
+              cita: cita,
+              pago: pago,
+            ),
           ),
         );
         return true;
