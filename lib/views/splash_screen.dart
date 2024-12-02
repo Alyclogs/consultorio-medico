@@ -3,6 +3,8 @@ import 'package:consultorio_medico/controllers/net_controller.dart';
 import 'package:consultorio_medico/models/providers/usuario_provider.dart';
 import 'package:consultorio_medico/views/components/bottom_navbar.dart';
 import 'package:flutter/material.dart';
+import '../models/providers/cita_provider.dart';
+import '../models/providers/notificacion_provider.dart';
 import '../models/usuario.dart';
 import 'login_screen.dart';
 
@@ -39,6 +41,9 @@ class SplashScreenState extends State<SplashScreen> {
     final action = widget.action;
     if (action == 'login') {
       if (netController.hasInternet) {
+        await CitaProvider.instance.checkAppointmentsStatus();
+        await NotificationProvider.instance.removeOldNotifications();
+
         AuthController.iniciarSesion((usuario) => _onSesionFound(usuario),
                 () => _navigateTo(LoginScreen()));
         return;

@@ -58,6 +58,13 @@ class _NotificationScreenState extends State<NotificationsScreen> {
                       Notificacion noti = _notificaciones[index];
                       return GestureDetector(
                         onTap: () async {
+                          if (noti.seen = false) {
+                            setState(() {
+                              noti.seen = true;
+                            });
+                            await NotificationProvider.instance
+                                .updateNotification(noti);
+                          }
                           final exist = await NotificationProvider.instance
                               .navigateToAppointmentScreen(noti.citaId);
                           if (!exist) {

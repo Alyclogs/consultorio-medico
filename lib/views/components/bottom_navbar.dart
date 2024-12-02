@@ -7,6 +7,7 @@ import 'package:consultorio_medico/views/medics_screen.dart';
 import 'package:consultorio_medico/views/profile_screen.dart';
 import 'package:consultorio_medico/views/splash_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../notifications_screen.dart';
 import '../sedes_screen.dart';
 
@@ -52,6 +53,9 @@ class _BottomNavBarState extends State<BottomNavBar>
         }
       },
     );
+    if (!await Permission.notification.isGranted) {
+      await Permission.notification.request();
+    }
     bool unseen = await getUnseenNotifications();
     setState(() {
       unseenNotifications = unseen;

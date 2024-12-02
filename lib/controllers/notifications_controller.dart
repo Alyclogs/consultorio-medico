@@ -100,6 +100,8 @@ class NotificationsController {
       payload: notification.citaId,
       platformChannelSpecifics,
     );
+
+    await NotificationProvider.instance.addNotification(notification);
   }
 
   Future<void> updateNotification(Notificacion notification) async {

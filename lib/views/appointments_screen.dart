@@ -42,9 +42,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     try {
       citasPendientes = await bd.getRegistros(usuarioActual.id, "PENDIENTE");
       citasFinalizadas = await bd.getRegistros(usuarioActual.id, "FINALIZADO");
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     } catch (e) {
       print('Error al cargar citas: $e');
     }

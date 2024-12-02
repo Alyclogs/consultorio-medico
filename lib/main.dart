@@ -45,6 +45,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
+
   var notifyPrefs = await Permission.notification.isGranted;
   if (!notifyPrefs) notifyPrefs = await requestNotificationPermissions();
   NotificationsController.instance.isNotificationPermsGranted = true;
@@ -63,7 +64,7 @@ void main() async {
         frequency: const Duration(minutes: 15));
     await Workmanager().registerPeriodicTask(
         'removeNotifications', 'removeOldNotifications',
-        frequency: const Duration(days: 7));
+        frequency: const Duration(hours: 6));
 
     await prefs.setBool('wm_initialized', true);
   }
